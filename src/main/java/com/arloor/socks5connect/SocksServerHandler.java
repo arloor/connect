@@ -9,6 +9,9 @@ import io.netty.handler.codec.socksx.v5.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+
 @ChannelHandler.Sharable
 public final class SocksServerHandler extends SimpleChannelInboundHandler<SocksMessage> {
     private static Logger logger= LoggerFactory.getLogger(SocksServerHandler.class);
@@ -26,8 +29,14 @@ public final class SocksServerHandler extends SimpleChannelInboundHandler<SocksM
                 ctx.close();
                 break;
             case SOCKS5:
+                SocketAddress socketAddress = ctx.channel().remoteAddress();
+                boolean fromLocalhost=false;
+                if (socketAddress instanceof InetSocketAddress) {
+                    fromLocalhost = ((InetSocketAddress) socketAddress).getAddress().isLoopbackAddress();
+                }
+
                 if (socksRequest instanceof Socks5InitialRequest) {
-                    if(ClientBootStrap.auth){//需要密码认证
+                    if(ClientBootStrap.auth&&!fromLocalhost){//需要密码认证
                         ctx.pipeline().addFirst(new Socks5PasswordAuthRequestDecoder());
                         ctx.write(new DefaultSocks5InitialResponse(Socks5AuthMethod.PASSWORD));
                     }else{//不需要密码认证
