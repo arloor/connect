@@ -20,6 +20,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Base64;
 import java.util.Random;
 
+import static com.arloor.socks5connect.ClientBootStrap.clazzSocketChannel;
+
 //不可共享
 //@ChannelHandler.Sharable
 public final class SocksServerConnectHandler extends SimpleChannelInboundHandler<SocksMessage> {
@@ -97,7 +99,7 @@ public final class SocksServerConnectHandler extends SimpleChannelInboundHandler
 
             final Channel inboundChannel = ctx.channel();
             b.group(inboundChannel.eventLoop())
-                    .channel(NioSocketChannel.class)
+                    .channel(clazzSocketChannel)
                     .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
                     .option(ChannelOption.SO_KEEPALIVE, true)
                     .handler(new DirectClientHandler(promise,request.dstAddr(),request.dstPort(),basicAuth));

@@ -6,8 +6,12 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollServerSocketChannel;
+import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.socksx.v5.Socks5AddressType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +39,12 @@ public final class ClientBootStrap {
     public static LinkedHashSet<Socks5AddressType> blockedAddressType=new LinkedHashSet<>();
 
     public static JSONArray servers;
+
+    // linux使用epoll，而非java原生的selector
+    public static final boolean isLinux = getOSMatches("Linux") || getOSMatches("LINUX");
+    public static final Class clazzServerSocketChannel = (isLinux? EpollServerSocketChannel.class: NioServerSocketChannel.class);
+    public static final Class clazzSocketChannel = (isLinux? EpollSocketChannel.class: NioSocketChannel.class);
+
 
 
     public static void initConfig(String[] args) throws IOException {
@@ -95,12 +105,12 @@ public final class ClientBootStrap {
         initConfig(args);
         System.out.println("=========================START Client!=============================");
 
-        EventLoopGroup bossGroup = new NioEventLoopGroup(1);
-        EventLoopGroup workerGroup = new NioEventLoopGroup();
+        EventLoopGroup bossGroup = isLinux ? new EpollEventLoopGroup(1) : new NioEventLoopGroup(1);
+        EventLoopGroup workerGroup = isLinux ? new EpollEventLoopGroup() : new NioEventLoopGroup();
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
-                    .channel(NioServerSocketChannel.class)
+                    .channel(clazzServerSocketChannel)
 //             .handler(new LoggingHandler(LogLevel.INFO))
                     .childHandler(new SocksServerInitializer());
             b.bind(localPort).sync().channel().closeFuture().sync();
@@ -108,5 +118,14 @@ public final class ClientBootStrap {
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
         }
+    }
+
+    private static boolean getOSMatches(String osNamePrefix) {
+        String os = System.getProperty("os.name");
+
+        if (os == null) {
+            return false;
+        }
+        return os.startsWith(osNamePrefix);
     }
 }
