@@ -35,9 +35,10 @@ public final class DirectClientHandler extends ChannelInboundHandlerAdapter {
         List<String> ciphers = Arrays.asList("ECDHE-RSA-AES128-SHA", "ECDHE-RSA-AES256-SHA", "AES128-SHA", "AES256-SHA", "DES-CBC3-SHA");
         try {
             sslContext = SslContextBuilder.forClient()
+                    .protocols("TLSv1.3", "TLSv1.2")
                     .sslProvider(SslProvider.OPENSSL)
                     .clientAuth(ClientAuth.NONE)
-                    .ciphers(ciphers)
+//                    .ciphers(ciphers)
                     .build();
         } catch (SSLException e) {
             e.printStackTrace();

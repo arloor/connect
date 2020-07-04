@@ -1,0 +1,14 @@
+[Unit]
+Description=socks5代理-客户端ARLOOR
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=/opt/socks5
+ExecStart=/usr/bin/java -jar /opt/socks5/socks5connect-1.0-SNAPSHOT-jar-with-dependencies.jar -c /etc/socks5/client.json
+LimitNOFILE=100000
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
