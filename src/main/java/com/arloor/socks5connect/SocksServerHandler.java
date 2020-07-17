@@ -80,7 +80,7 @@ public final class SocksServerHandler extends SimpleChannelInboundHandler<SocksM
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable throwable) {
-        throwable.printStackTrace();
+        logger.warn(ctx.channel().remoteAddress()+" "+ExceptionUtil.getMessage(throwable));
         SocketChannelUtils.closeOnFlush(ctx.channel());
     }
 }
