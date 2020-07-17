@@ -27,8 +27,5 @@ public final class SocksServerInitializer extends ChannelInitializer<SocketChann
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        logger.warn("accept异常！");
-        logger.warn(ctx.channel().remoteAddress()+" "+ExceptionUtil.getMessage(cause));
-        ctx.close();
     }
 }
