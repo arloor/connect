@@ -83,7 +83,9 @@ public final class SocksServerConnectHandler extends SimpleChannelInboundHandler
                                     public void operationComplete(ChannelFuture channelFuture) {
                                         if(channelFuture.isSuccess()){
                                             ctx.pipeline().remove(SocksServerConnectHandler.this);
+                                            // outboundChannel先增加handler，再删除Check的Hanlder，以防有Exception没有catch
                                             outboundChannel.pipeline().addLast(new RelayHandler(ctx.channel()));
+                                            outboundChannel.pipeline().remove("check");
                                             logger.info(request.dstAddr()+":"+request.dstPort()+"  <<<<<<<  "+ctx.channel().remoteAddress());
                                             ctx.pipeline().addLast(new RelayHandler(outboundChannel));
                                         }

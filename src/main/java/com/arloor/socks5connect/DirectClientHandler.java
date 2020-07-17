@@ -77,7 +77,6 @@ public final class DirectClientHandler extends ChannelInboundHandlerAdapter {
                     &&msg.readByte()=='0'
                     &&msg.readByte()=='0'
             ){
-                ctx.pipeline().remove("check");
                 //宣告成功
                 ctx.pipeline().remove(DirectClientHandler.this);
                 promise.setSuccess(ctx.channel());
