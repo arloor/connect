@@ -24,6 +24,10 @@ import java.util.Objects;
 public final class ClientBootStrap {
 
     private static Logger logger = LoggerFactory.getLogger(ClientBootStrap.class.getSimpleName());
+    public static final OsHelper.OS os = OsHelper.parseOS();
+
+    public static final Class clazzServerSocketChannel = os.serverSocketChannelClazz;
+    public static final Class clazzSocketChannel = os.socketChannelClazz;
 
     private static int localPort = 1080;
 
@@ -36,24 +40,18 @@ public final class ClientBootStrap {
     public static boolean passIPv4 = true;
     public static boolean passIPv6 = false;
 
-    public static LinkedHashSet<Socks5AddressType> blockedAddressType=new LinkedHashSet<>();
+    public static LinkedHashSet<Socks5AddressType> blockedAddressType = new LinkedHashSet<>();
 
     public static JSONArray servers;
-
-    // linux使用epoll，而非java原生的selector
-    public static final boolean isLinux = getOSMatches("Linux") || getOSMatches("LINUX");
-    public static final Class clazzServerSocketChannel = (isLinux? EpollServerSocketChannel.class: NioServerSocketChannel.class);
-    public static final Class clazzSocketChannel = (isLinux? EpollSocketChannel.class: NioSocketChannel.class);
-
 
 
     public static void initConfig(String[] args) throws IOException {
         JSONObject config = null;
         if (args.length == 2 && args[0].equals("-c")) {
             File file = new File(args[1]);
-            System.out.println("config @" + file.getAbsolutePath());
+            logger.info("config @" + file.getAbsolutePath());
             if (!file.exists()) {
-                System.out.println("Error: the config file not exists");
+                logger.error("Error: the config file not exists");
                 System.exit(-1);
             }
 
@@ -63,7 +61,7 @@ public final class ClientBootStrap {
             outputStream.close();
         } else {
             //        读取jar中resources下的sogo.json
-            System.out.println("config @classpath:client.json");
+            logger.info("config @classpath:client.json");
             BufferedReader in = new BufferedReader(new InputStreamReader(Objects.requireNonNull(ClientBootStrap.class.getClassLoader().getResourceAsStream("client.json"))));
             StringBuffer buffer = new StringBuffer();
             String line = "";
@@ -74,12 +72,12 @@ public final class ClientBootStrap {
             config = JSON.parseObject(input);
         }
 
-        System.out.println("config : " + config);
-        if (config.containsKey("SupportDomain")&&!config.getBoolean("SupportDomain"))
+        logger.info("config : " + config);
+        if (config.containsKey("SupportDomain") && !config.getBoolean("SupportDomain"))
             blockedAddressType.add(Socks5AddressType.DOMAIN);
-        if (config.containsKey("SupportIPv4")&&!config.getBoolean("SupportIPv4"))
+        if (config.containsKey("SupportIPv4") && !config.getBoolean("SupportIPv4"))
             blockedAddressType.add(Socks5AddressType.IPv4);
-        if (config.containsKey("SupportIPv6")&&!config.getBoolean("SupportIPv6"))
+        if (config.containsKey("SupportIPv6") && !config.getBoolean("SupportIPv6"))
             blockedAddressType.add(Socks5AddressType.IPv6);
         localPort = config.getInteger("ClientPort");
         user = config.getString("User");
@@ -101,12 +99,9 @@ public final class ClientBootStrap {
     }
 
     public static void main(String[] args) throws Exception {
-        printUsage();
         initConfig(args);
-        System.out.println("=========================START Client!=============================");
-
-        EventLoopGroup bossGroup = isLinux ? new EpollEventLoopGroup(1) : new NioEventLoopGroup(1);
-        EventLoopGroup workerGroup = isLinux ? new EpollEventLoopGroup() : new NioEventLoopGroup();
+        EventLoopGroup bossGroup = os.eventLoopBuilder.apply(1);
+        EventLoopGroup workerGroup = os.eventLoopBuilder.apply(0);
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
@@ -118,14 +113,5 @@ public final class ClientBootStrap {
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
         }
-    }
-
-    private static boolean getOSMatches(String osNamePrefix) {
-        String os = System.getProperty("os.name");
-
-        if (os == null) {
-            return false;
-        }
-        return os.startsWith(osNamePrefix);
     }
 }
