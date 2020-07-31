@@ -36,9 +36,6 @@ public final class ClientBootStrap {
     public static String user;
     public static String pass;
     public static boolean auth;
-    public static boolean passDomain = true;
-    public static boolean passIPv4 = true;
-    public static boolean passIPv6 = false;
 
     public static LinkedHashSet<Socks5AddressType> blockedAddressType = new LinkedHashSet<>();
 
