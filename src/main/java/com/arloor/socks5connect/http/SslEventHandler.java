@@ -30,14 +30,15 @@ public class SslEventHandler extends ChannelInboundHandlerAdapter {
         if(evt instanceof SslHandshakeCompletionEvent){
             SslHandshakeCompletionEvent sslComplete = (SslHandshakeCompletionEvent) evt;
             if(sslComplete.isSuccess()){
-                ctx.pipeline().remove(this);
-                ctx.pipeline().addLast(new BlindRelayHandler(relay));
+                if(ctx.channel().isActive()){
+                    ctx.pipeline().remove(this);
+                    ctx.pipeline().addLast(new BlindRelayHandler(relay));
 
-                relay.pipeline().remove(HttpConnectHandler.class);
+                    relay.pipeline().remove(HttpConnectHandler.class);
 //        relay.pipeline().addLast(new LoggingHandler(LogLevel.INFO));
-                relay.pipeline().addLast(new BlindRelayHandler(ctx.channel()));
-                relay.config().setAutoRead(true);
-
+                    relay.pipeline().addLast(new BlindRelayHandler(ctx.channel()));
+                    relay.config().setAutoRead(true);
+                }
             }else {
                 ctx.close();
 //                relay.writeAndFlush(
