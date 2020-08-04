@@ -6,6 +6,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.arloor.socks5connect.http.HttpServerInitializer;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.handler.codec.socksx.v5.Socks5AddressType;
 import org.slf4j.Logger;
@@ -99,6 +100,7 @@ public final class ClientBootStrap {
                 ServerBootstrap httpB = new ServerBootstrap();
                 httpB.group(bossGroup, workerGroup)
                         .channel(clazzServerSocketChannel)
+                        .childOption(ChannelOption.AUTO_READ,Boolean.FALSE)
 //             .handler(new LoggingHandler(LogLevel.INFO))
                         .childHandler(new HttpServerInitializer());
                 try {
