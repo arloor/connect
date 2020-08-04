@@ -7,8 +7,11 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.HttpRequestDecoder;
+import io.netty.handler.codec.http.HttpRequestEncoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
 import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,10 +35,13 @@ public class SslEventHandler extends ChannelInboundHandlerAdapter {
             if(sslComplete.isSuccess()){
                 if(ctx.channel().isActive()){
                     ctx.pipeline().remove(this);
+                    ctx.pipeline().addLast(new HttpRequestEncoder());
                     ctx.pipeline().addLast(new BlindRelayHandler(relay));
 
+
+                    relay.pipeline().addLast(new HttpRequestDecoder());
                     relay.pipeline().remove(HttpConnectHandler.class);
-//        relay.pipeline().addLast(new LoggingHandler(LogLevel.INFO));
+//                    relay.pipeline().addLast(new LoggingHandler(LogLevel.INFO));
                     relay.pipeline().addLast(new BlindRelayHandler(ctx.channel()));
                     relay.config().setAutoRead(true);
                 }
