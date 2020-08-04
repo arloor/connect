@@ -4,13 +4,11 @@ package com.arloor.socks5connect;
 import com.alibaba.fastjson.JSONObject;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
-import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.socksx.SocksMessage;
 import io.netty.handler.codec.socksx.v4.Socks4CommandRequest;
 import io.netty.handler.codec.socksx.v5.DefaultSocks5CommandResponse;
 import io.netty.handler.codec.socksx.v5.Socks5CommandRequest;
 import io.netty.handler.codec.socksx.v5.Socks5CommandStatus;
-import io.netty.handler.ssl.*;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
@@ -84,11 +82,11 @@ public final class SocksServerConnectHandler extends SimpleChannelInboundHandler
                                         if(channelFuture.isSuccess()){
                                             ctx.pipeline().remove(SocksServerConnectHandler.this);
                                             // outboundChannel先增加handler，再删除Check的Hanlder，以防有Exception没有catch
-                                            outboundChannel.pipeline().addLast(new RelayHandler(ctx.channel()));
+                                            outboundChannel.pipeline().addLast(new BlindRelayHandler(ctx.channel()));
                                             outboundChannel.pipeline().remove("check");
 //                                            logger.info(request.dstAddr()+":"+request.dstPort()+"  <<<<<<<  "+ctx.channel().remoteAddress());
                                             logger.info(ctx.channel().remoteAddress().toString() + " "+ request.type()+ " "+request.dstAddr()+":"+request.dstPort());
-                                            ctx.pipeline().addLast(new RelayHandler(outboundChannel));
+                                            ctx.pipeline().addLast(new BlindRelayHandler(outboundChannel));
                                         }
                                     }
                                 });

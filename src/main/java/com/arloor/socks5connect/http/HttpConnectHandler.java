@@ -11,14 +11,13 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.HttpVersion;
-import io.netty.handler.logging.LogLevel;
-import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.ClientAuth;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
@@ -35,7 +34,7 @@ import java.util.Random;
 import static com.arloor.socks5connect.ClientBootStrap.clazzSocketChannel;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 
-public class HttpConnectHandler extends SimpleChannelInboundHandler<ByteBuf> {
+public class HttpConnectHandler extends ChannelInboundHandlerAdapter {
 
     private static Logger logger = LoggerFactory.getLogger(HttpConnectHandler.class.getSimpleName());
 
@@ -87,7 +86,8 @@ public class HttpConnectHandler extends SimpleChannelInboundHandler<ByteBuf> {
                     Channel outboud = future.channel();
                     outboud.pipeline().addLast(sslContext.newHandler(ctx.alloc()));
 //                    outboud.pipeline().addLast(new LoggingHandler(LogLevel.INFO));
-                    outboud.pipeline().addLast(new SslHandler(ctx.channel()));
+                    outboud.pipeline().addLast(new SslEventHandler(ctx.channel()));
+                    // 写0字符，促使ssl握手
                     outboud.writeAndFlush(Unpooled.wrappedBuffer("".getBytes())).addListener((future1 -> {
                         if(future1.isSuccess()){
                             logger.info("write blank success");
@@ -98,9 +98,9 @@ public class HttpConnectHandler extends SimpleChannelInboundHandler<ByteBuf> {
                 } else {
                     // Close the connection if the connection attempt has failed.
                     logger.error("connect to: " + remoteHost + ":" + remotePort + " failed! == " + ExceptionUtil.getMessage(future.cause()));
-                    ctx.channel().writeAndFlush(
-                            new DefaultHttpResponse(HttpVersion.HTTP_1_1, INTERNAL_SERVER_ERROR)
-                    );
+//                    ctx.channel().writeAndFlush(
+//                            new DefaultHttpResponse(HttpVersion.HTTP_1_1, INTERNAL_SERVER_ERROR)
+//                    );
                     SocketChannelUtils.closeOnFlush(ctx.channel());
                 }
             }
@@ -119,14 +119,4 @@ public class HttpConnectHandler extends SimpleChannelInboundHandler<ByteBuf> {
         this.remoteHost = serverInfo.getString("ProxyAddr");
         this.basicAuth = Base64.getEncoder().encodeToString((serverInfo.getString("UserName") + ":" + serverInfo.getString("Password")).getBytes());
     }
-
-    @Override
-    protected void channelRead0(ChannelHandlerContext ctx, ByteBuf buf) throws Exception {
-        // SimpleChannelInboundHandler会release，在这里先retain下
-        ctx.channel().config().setAutoRead(false);
-        buf.retain();
-
-    }
-
-
 }
