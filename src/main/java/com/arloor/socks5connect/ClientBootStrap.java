@@ -104,7 +104,7 @@ public final class ClientBootStrap {
 //             .handler(new LoggingHandler(LogLevel.INFO))
                         .childHandler(new HttpServerInitializer());
                 try {
-                    httpB.bind(7777).sync().channel().closeFuture().sync();
+                    httpB.bind(3128).sync().channel().closeFuture().sync();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
