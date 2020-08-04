@@ -9,13 +9,13 @@ import io.netty.util.ReferenceCountUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class RelayHandler extends ChannelInboundHandlerAdapter {
+public final class BlindRelayHandler extends ChannelInboundHandlerAdapter {
 
-    private static Logger logger = LoggerFactory.getLogger(RelayHandler.class.getSimpleName());
+    private static Logger logger = LoggerFactory.getLogger(BlindRelayHandler.class.getSimpleName());
 
     private final Channel relayChannel;
 
-    public RelayHandler(Channel relayChannel) {
+    public BlindRelayHandler(Channel relayChannel) {
         this.relayChannel = relayChannel;
     }
 
