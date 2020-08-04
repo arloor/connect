@@ -4,14 +4,9 @@ package com.arloor.socks5connect;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.arloor.socks5connect.http.HttpServerInitializer;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.epoll.EpollEventLoopGroup;
-import io.netty.channel.epoll.EpollServerSocketChannel;
-import io.netty.channel.epoll.EpollSocketChannel;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.socksx.v5.Socks5AddressType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,12 +95,25 @@ public final class ClientBootStrap {
         EventLoopGroup bossGroup = os.eventLoopBuilder.apply(1);
         EventLoopGroup workerGroup = os.eventLoopBuilder.apply(0);
         try {
+            new Thread(()->{
+                ServerBootstrap httpB = new ServerBootstrap();
+                httpB.group(bossGroup, workerGroup)
+                        .channel(clazzServerSocketChannel)
+//             .handler(new LoggingHandler(LogLevel.INFO))
+                        .childHandler(new HttpServerInitializer());
+                try {
+                    httpB.bind(7777).sync().channel().closeFuture().sync();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }).start();;
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
                     .channel(clazzServerSocketChannel)
 //             .handler(new LoggingHandler(LogLevel.INFO))
                     .childHandler(new SocksServerInitializer());
             b.bind(localPort).sync().channel().closeFuture().sync();
+
         } finally {
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
