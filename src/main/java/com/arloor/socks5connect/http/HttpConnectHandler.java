@@ -77,12 +77,12 @@ public class HttpConnectHandler extends ChannelInboundHandlerAdapter {
 
                     }
                 });
-        logger.info("connect");
+//        logger.info("connect");
         b.connect(remoteHost, remotePort).addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 if (future.isSuccess()) {
-                    logger.info("connect success");
+//                    logger.info("connect success");
                     Channel outboud = future.channel();
                     outboud.pipeline().addLast(sslContext.newHandler(ctx.alloc()));
 //                    outboud.pipeline().addLast(new LoggingHandler(LogLevel.INFO));
@@ -90,9 +90,9 @@ public class HttpConnectHandler extends ChannelInboundHandlerAdapter {
                     // 写0字符，促使ssl握手
                     outboud.writeAndFlush(Unpooled.wrappedBuffer("".getBytes())).addListener((future1 -> {
                         if(future1.isSuccess()){
-                            logger.info("write blank success");
+//                            logger.info("write blank success");
                         }else {
-                            logger.info("write blank faild");
+//                            logger.info("write blank faild");
                         }
                     }));
                 } else {
