@@ -1,6 +1,7 @@
 
 package com.arloor.socks5connect;
 
+import com.alibaba.fastjson.JSONObject;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -13,11 +14,23 @@ import io.netty.util.ReferenceCountUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Base64;
+
+import static com.arloor.socks5connect.ClientBootStrap.use;
+
 public final class BlindRelayHandler extends ChannelInboundHandlerAdapter {
 
     private static Logger logger = LoggerFactory.getLogger(BlindRelayHandler.class.getSimpleName());
 
     private final Channel relayChannel;
+    private static final String basicAuth;
+
+
+    static {
+        JSONObject serverInfo= ClientBootStrap.servers.getJSONObject(use);
+        basicAuth= Base64.getEncoder().encodeToString((serverInfo.getString("UserName")+":"+serverInfo.getString("Password")).getBytes());
+
+    }
 
     public BlindRelayHandler(Channel relayChannel) {
         this.relayChannel = relayChannel;
@@ -43,10 +56,11 @@ public final class BlindRelayHandler extends ChannelInboundHandlerAdapter {
             HttpRequest request =null;
             if(msg instanceof HttpRequest){
                 request = (HttpRequest) msg;
+                request.headers().set("Proxy-Authorization", "Basic "+basicAuth);
                 if(request.getMethod().equals(HttpMethod.CONNECT)){
                     ctx.pipeline().remove(HttpRequestDecoder.class);
                 }
-                System.out.println(request);
+               logger.info(request.method()+" "+request.uri());
             }
             HttpRequest finalRequest = request;
             relayChannel.writeAndFlush(msg).addListener(future -> {
@@ -70,11 +84,5 @@ public final class BlindRelayHandler extends ChannelInboundHandlerAdapter {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         logger.warn(ctx.channel().remoteAddress()+" "+ExceptionUtil.getMessage(cause));
         ctx.close();
-    }
-
-    @Override
-    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-        super.userEventTriggered(ctx, evt);
-        logger.info(evt.toString());
     }
 }
