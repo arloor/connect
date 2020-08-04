@@ -37,8 +37,8 @@ public class SslEventHandler extends ChannelInboundHandlerAdapter {
                     ctx.pipeline().remove(this);
                     ctx.pipeline().addLast(new HttpRequestEncoder());
                     ctx.pipeline().addLast(new BlindRelayHandler(relay));
-
-
+                }
+                if(relay.isActive()){
                     relay.pipeline().addLast(new HttpRequestDecoder());
                     relay.pipeline().remove(HttpConnectHandler.class);
 //                    relay.pipeline().addLast(new LoggingHandler(LogLevel.INFO));
