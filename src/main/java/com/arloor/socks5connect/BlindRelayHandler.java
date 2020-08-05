@@ -11,14 +11,20 @@ import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpRequestEncoder;
 import io.netty.util.ReferenceCountUtil;
+import org.bouncycastle.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.Base64;
+import java.util.Objects;
 
 import static com.arloor.socks5connect.ClientBootStrap.use;
 
 public final class BlindRelayHandler extends ChannelInboundHandlerAdapter {
+
+    private static final String clientAuth = "Basic "+Base64.getEncoder().encodeToString((ClientBootStrap.user+":"+ClientBootStrap.pass).getBytes());
 
     private static Logger logger = LoggerFactory.getLogger(BlindRelayHandler.class.getSimpleName());
 
@@ -55,7 +61,20 @@ public final class BlindRelayHandler extends ChannelInboundHandlerAdapter {
         if (relayChannel.isActive()) {
             HttpRequest request =null;
             if(msg instanceof HttpRequest){
+                boolean fromLocalhost=false;
+                SocketAddress clientAddr = ctx.channel().remoteAddress();
+                if ( clientAddr instanceof InetSocketAddress) {
+                    fromLocalhost = ((InetSocketAddress) clientAddr).getAddress().isLoopbackAddress();
+                }
                 request = (HttpRequest) msg;
+                if(ClientBootStrap.auth&&!fromLocalhost){
+                    String authorization=request.headers().get("Proxy-Authorization", "Basic "+basicAuth);
+                    if(!Objects.equals(authorization,clientAuth)){
+                        logger.warn(String.format("%s %s %s !wrong_auth{%s}",clientAddr.toString(),request.method(),request.uri(),authorization));
+                        SocketChannelUtils.closeOnFlush(relayChannel);
+                        SocketChannelUtils.closeOnFlush(ctx.channel());
+                    }
+                }
                 request.headers().set("Proxy-Authorization", "Basic "+basicAuth);
                 if(request.getMethod().equals(HttpMethod.CONNECT)){
                     ctx.pipeline().remove(HttpRequestDecoder.class);
