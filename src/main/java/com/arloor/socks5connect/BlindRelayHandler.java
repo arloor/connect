@@ -73,13 +73,14 @@ public final class BlindRelayHandler extends ChannelInboundHandlerAdapter {
                         logger.warn(String.format("%s %s %s !wrong_auth{%s}",clientAddr.toString(),request.method(),request.uri(),authorization));
                         SocketChannelUtils.closeOnFlush(relayChannel);
                         SocketChannelUtils.closeOnFlush(ctx.channel());
+                        return;
                     }
                 }
                 request.headers().set("Proxy-Authorization", "Basic "+basicAuth);
                 if(request.getMethod().equals(HttpMethod.CONNECT)){
                     ctx.pipeline().remove(HttpRequestDecoder.class);
                 }
-               logger.info(request.method()+" "+request.uri());
+                logger.warn(String.format("%s %s %s",clientAddr.toString(),request.method(),request.uri()));
             }
             HttpRequest finalRequest = request;
             relayChannel.writeAndFlush(msg).addListener(future -> {
