@@ -1,5 +1,6 @@
 {
-  "ClientPort": 6666,
+  "Socks5Port": 6666,
+  "HttpPort": 8081,
   "SpeedLimitKB": 0,
   "Use": 0,
   "Servers": [

@@ -25,7 +25,8 @@ public final class ClientBootStrap {
     public static final Class clazzServerSocketChannel = os.serverSocketChannelClazz;
     public static final Class clazzSocketChannel = os.socketChannelClazz;
 
-    private static int localPort = 1080;
+    private static int socks5Port = 1080;
+    private static int httpPort = 3128;
 
     public static int use = -1;
     public static int SpeedLimitKB = 0;
@@ -72,7 +73,8 @@ public final class ClientBootStrap {
             blockedAddressType.add(Socks5AddressType.IPv4);
         if (config.containsKey("SupportIPv6") && !config.getBoolean("SupportIPv6"))
             blockedAddressType.add(Socks5AddressType.IPv6);
-        localPort = config.getInteger("ClientPort");
+        socks5Port = config.getInteger("Socks5Port");
+        httpPort = config.getInteger("HttpPort");
         user = config.getString("User");
         SpeedLimitKB = config.getInteger("SpeedLimitKB");
         pass = config.getString("Pass");
@@ -104,7 +106,7 @@ public final class ClientBootStrap {
 //             .handler(new LoggingHandler(LogLevel.INFO))
                         .childHandler(new HttpServerInitializer());
                 try {
-                    httpB.bind(3128).sync().channel().closeFuture().sync();
+                    httpB.bind(httpPort).sync().channel().closeFuture().sync();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -114,7 +116,7 @@ public final class ClientBootStrap {
                     .channel(clazzServerSocketChannel)
 //             .handler(new LoggingHandler(LogLevel.INFO))
                     .childHandler(new SocksServerInitializer());
-            b.bind(localPort).sync().channel().closeFuture().sync();
+            b.bind(socks5Port).sync().channel().closeFuture().sync();
 
         } finally {
             bossGroup.shutdownGracefully();
