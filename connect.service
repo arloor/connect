@@ -1,11 +1,11 @@
 [Unit]
-Description=socks5代理-客户端ARLOOR
+Description=本地代理3128&1080
 After=network-online.target
 Wants=network-online.target
 
 [Service]
-WorkingDirectory=/opt/proxy
-ExecStart=/usr/bin/java -jar /opt/proxy/connect-1.0-SNAPSHOT-jar-with-dependencies.jar -c /etc/proxy/client.json
+WorkingDirectory=/opt/connect
+ExecStart=/usr/bin/java -jar /opt/connect/connect-1.0-SNAPSHOT-jar-with-dependencies.jar -c /opt/connect/config.json
 LimitNOFILE=100000
 Restart=always
 RestartSec=30
