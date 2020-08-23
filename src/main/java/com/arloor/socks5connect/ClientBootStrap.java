@@ -8,6 +8,8 @@ import com.arloor.socks5connect.http.HttpServerInitializer;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.socket.ServerSocketChannel;
+import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.socksx.v5.Socks5AddressType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,10 +22,9 @@ import java.util.Objects;
 public final class ClientBootStrap {
 
     private static Logger logger = LoggerFactory.getLogger(ClientBootStrap.class.getSimpleName());
-    public static final OsHelper.OS os = OsHelper.parseOS();
 
-    public static final Class clazzServerSocketChannel = os.serverSocketChannelClazz;
-    public static final Class clazzSocketChannel = os.socketChannelClazz;
+    public static final Class<? extends ServerSocketChannel> clazzServerSocketChannel = OsHelper.serverSocketChannelClazz();
+    public static final Class<? extends SocketChannel> clazzSocketChannel = OsHelper.socketChannelClazz();
 
     private static int socks5Port = 1080;
     private static int httpPort = 3128;
@@ -95,8 +96,8 @@ public final class ClientBootStrap {
 
     public static void main(String[] args) throws Exception {
         initConfig(args);
-        EventLoopGroup bossGroup = os.eventLoopBuilder.apply(1);
-        EventLoopGroup workerGroup = os.eventLoopBuilder.apply(0);
+        EventLoopGroup bossGroup = OsHelper.buildEventLoopGroup(1);
+        EventLoopGroup workerGroup = OsHelper.buildEventLoopGroup(0);
         try {
             new Thread(()->{
                 ServerBootstrap httpB = new ServerBootstrap();
