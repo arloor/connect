@@ -137,7 +137,7 @@ public final class ClientBootStrap {
                             });
                         }
                     });
-            Channel configChannel = configBootstrap.bind(socks5Port).sync().channel();
+            Channel configChannel = configBootstrap.bind(1234).sync().channel();
 
             httpServerChannel.closeFuture().sync();
             socks5ServerChannel.closeFuture().sync();
