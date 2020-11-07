@@ -6,10 +6,13 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.arloor.socks5connect.http.HttpServerInitializer;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.socket.ServerSocketChannel;
 import io.netty.channel.socket.SocketChannel;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpObjectAggregator;
+import io.netty.handler.codec.http.HttpRequestDecoder;
+import io.netty.handler.codec.http.HttpResponseEncoder;
 import io.netty.handler.codec.socksx.v5.Socks5AddressType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,26 +102,45 @@ public final class ClientBootStrap {
         EventLoopGroup bossGroup = OsHelper.buildEventLoopGroup(1);
         EventLoopGroup workerGroup = OsHelper.buildEventLoopGroup(0);
         try {
-            new Thread(()->{
-                ServerBootstrap httpB = new ServerBootstrap();
-                httpB.group(bossGroup, workerGroup)
-                        .channel(clazzServerSocketChannel)
-                        .childOption(ChannelOption.AUTO_READ,Boolean.FALSE)
-//             .handler(new LoggingHandler(LogLevel.INFO))
-                        .childHandler(new HttpServerInitializer());
-                try {
-                    httpB.bind(httpPort).sync().channel().closeFuture().sync();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }).start();;
-            ServerBootstrap b = new ServerBootstrap();
-            b.group(bossGroup, workerGroup)
-                    .channel(clazzServerSocketChannel)
-//             .handler(new LoggingHandler(LogLevel.INFO))
-                    .childHandler(new SocksServerInitializer());
-            b.bind(socks5Port).sync().channel().closeFuture().sync();
 
+            // http proxy bootstrap
+            ServerBootstrap httpBootStrap = new ServerBootstrap();
+            httpBootStrap.group(bossGroup, workerGroup)
+                    .channel(clazzServerSocketChannel)
+                    .childOption(ChannelOption.AUTO_READ, Boolean.FALSE)
+                    .childHandler(new HttpServerInitializer());
+
+            Channel httpServerChannel = httpBootStrap.bind(httpPort).sync().channel();
+
+            // socks5 proxy bootstrap
+            ServerBootstrap socks5BootStrap = new ServerBootstrap();
+            socks5BootStrap.group(bossGroup, workerGroup)
+                    .channel(clazzServerSocketChannel)
+                    .childHandler(new SocksServerInitializer());
+            Channel socks5ServerChannel = socks5BootStrap.bind(socks5Port).sync().channel();
+
+            ServerBootstrap configBootstrap = new ServerBootstrap();
+            configBootstrap.group(bossGroup, workerGroup)
+                    .channel(clazzServerSocketChannel)
+                    .childHandler(new ChannelInitializer<SocketChannel>() {
+                        @Override
+                        protected void initChannel(SocketChannel socketChannel) throws Exception {
+                            socketChannel.pipeline().addLast(new HttpResponseEncoder());
+                            socketChannel.pipeline().addLast(new HttpRequestDecoder());
+                            socketChannel.pipeline().addLast(new HttpObjectAggregator(65536));
+                            socketChannel.pipeline().addLast(new SimpleChannelInboundHandler<FullHttpRequest>() {
+
+                                @Override
+                                protected void channelRead0(ChannelHandlerContext channelHandlerContext, FullHttpRequest fullHttpRequest) throws Exception {
+
+                                }
+                            });
+                        }
+                    });
+            Channel configChannel = configBootstrap.bind(socks5Port).sync().channel();
+
+            httpServerChannel.closeFuture().sync();
+            socks5ServerChannel.closeFuture().sync();
         } finally {
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
