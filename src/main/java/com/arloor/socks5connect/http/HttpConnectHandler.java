@@ -41,7 +41,6 @@ public class HttpConnectHandler extends ChannelInboundHandlerAdapter {
 
     private int remotePort = 80;
     private String remoteHost;
-    private String basicAuth;
     private final Bootstrap b = new Bootstrap();
     private static SslContext sslContext;
 
@@ -89,9 +88,9 @@ public class HttpConnectHandler extends ChannelInboundHandlerAdapter {
                     outboud.pipeline().addLast(new SslEventHandler(ctx.channel()));
                     // 写0字符，促使ssl握手
                     outboud.writeAndFlush(Unpooled.wrappedBuffer("".getBytes())).addListener((future1 -> {
-                        if(future1.isSuccess()){
+                        if (future1.isSuccess()) {
 //                            logger.info("write blank success");
-                        }else {
+                        } else {
 //                            logger.info("write blank faild");
                         }
                     }));
@@ -109,14 +108,8 @@ public class HttpConnectHandler extends ChannelInboundHandlerAdapter {
 
     public HttpConnectHandler() {
         super();
-        int use = ClientBootStrap.use;
-        if (use == -1) {
-            Random rand = new Random();
-            use = rand.nextInt(ClientBootStrap.servers.size());
-        }
-        JSONObject serverInfo = ClientBootStrap.servers.getJSONObject(use);
+        JSONObject serverInfo = ClientBootStrap.getActiveServer();
         this.remotePort = serverInfo.getInteger("ProxyPort");
         this.remoteHost = serverInfo.getString("ProxyAddr");
-        this.basicAuth = Base64.getEncoder().encodeToString((serverInfo.getString("UserName") + ":" + serverInfo.getString("Password")).getBytes());
     }
 }

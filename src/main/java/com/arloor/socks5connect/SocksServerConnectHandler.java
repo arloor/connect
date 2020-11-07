@@ -24,25 +24,19 @@ import static com.arloor.socks5connect.ClientBootStrap.clazzSocketChannel;
 //@ChannelHandler.Sharable
 public final class SocksServerConnectHandler extends SimpleChannelInboundHandler<SocksMessage> {
 
-    private static Logger logger= LoggerFactory.getLogger(SocksServerConnectHandler.class.getSimpleName());
+    private static Logger logger = LoggerFactory.getLogger(SocksServerConnectHandler.class.getSimpleName());
 
-    private  int remotePort=80;
+    private int remotePort = 80;
     private String remoteHost;
     private String basicAuth;
 
 
-
     public SocksServerConnectHandler() {
         super();
-        int use= ClientBootStrap.use;
-        if(use==-1){
-            Random rand = new Random();
-            use=rand.nextInt(ClientBootStrap.servers.size());
-        }
-        JSONObject serverInfo= ClientBootStrap.servers.getJSONObject(use);
-        remotePort=serverInfo.getInteger("ProxyPort");
-        remoteHost=serverInfo.getString("ProxyAddr");
-        basicAuth= Base64.getEncoder().encodeToString((serverInfo.getString("UserName")+":"+serverInfo.getString("Password")).getBytes());
+        JSONObject serverInfo = ClientBootStrap.getActiveServer();
+        remotePort = serverInfo.getInteger("ProxyPort");
+        remoteHost = serverInfo.getString("ProxyAddr");
+        basicAuth = Base64.getEncoder().encodeToString((serverInfo.getString("UserName") + ":" + serverInfo.getString("Password")).getBytes());
     }
 
     private final Bootstrap b = new Bootstrap();
@@ -51,13 +45,13 @@ public final class SocksServerConnectHandler extends SimpleChannelInboundHandler
     public void channelRead0(final ChannelHandlerContext ctx, final SocksMessage message) throws Exception {
         if (message instanceof Socks4CommandRequest) {
             //不处理sock4,直接关闭channel
-            logger.warn("socks4 request from"+ctx.channel().remoteAddress());
+            logger.warn("socks4 request from" + ctx.channel().remoteAddress());
             ctx.close();
         } else if (message instanceof Socks5CommandRequest) {
             final Socks5CommandRequest request = (Socks5CommandRequest) message;
             //禁止CONNECT域名和ipv6
-            if(ClientBootStrap.blockedAddressType.contains(request.dstAddrType())){
-                logger.warn("NOT support: "+request.dstAddr()+":"+request.dstPort()+"  <<<<<  "+ctx.channel().remoteAddress());
+            if (ClientBootStrap.blockedAddressType.contains(request.dstAddrType())) {
+                logger.warn("NOT support: " + request.dstAddr() + ":" + request.dstPort() + "  <<<<<  " + ctx.channel().remoteAddress());
                 ctx.close();
                 return;
             }
@@ -79,13 +73,13 @@ public final class SocksServerConnectHandler extends SimpleChannelInboundHandler
                                 responseFuture.addListener(new ChannelFutureListener() {
                                     @Override
                                     public void operationComplete(ChannelFuture channelFuture) {
-                                        if(channelFuture.isSuccess()){
+                                        if (channelFuture.isSuccess()) {
                                             ctx.pipeline().remove(SocksServerConnectHandler.this);
                                             // outboundChannel先增加handler，再删除Check的Hanlder，以防有Exception没有catch
                                             outboundChannel.pipeline().addLast(new BlindRelayHandler(ctx.channel()));
                                             outboundChannel.pipeline().remove("check");
 //                                            logger.info(request.dstAddr()+":"+request.dstPort()+"  <<<<<<<  "+ctx.channel().remoteAddress());
-                                            logger.info(ctx.channel().remoteAddress().toString() + " "+ request.type()+ " "+request.dstAddr()+":"+request.dstPort());
+                                            logger.info(ctx.channel().remoteAddress().toString() + " " + request.type() + " " + request.dstAddr() + ":" + request.dstPort());
                                             ctx.pipeline().addLast(new BlindRelayHandler(outboundChannel));
                                         }
                                     }
@@ -103,7 +97,7 @@ public final class SocksServerConnectHandler extends SimpleChannelInboundHandler
                     .channel(clazzSocketChannel)
                     .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
                     .option(ChannelOption.SO_KEEPALIVE, true)
-                    .handler(new DirectClientHandler(promise,request.dstAddr(),request.dstPort(),basicAuth));
+                    .handler(new DirectClientHandler(promise, request.dstAddr(), request.dstPort(), basicAuth));
 
             b.connect(remoteHost, remotePort).addListener(new ChannelFutureListener() {
                 @Override
@@ -113,7 +107,7 @@ public final class SocksServerConnectHandler extends SimpleChannelInboundHandler
 //                        System.out.println("连接成功");
                     } else {
                         // Close the connection if the connection attempt has failed.
-                        logger.error("connect to: "+remoteHost+":"+remotePort+" failed! == "+ ExceptionUtil.getMessage(future.cause()));
+                        logger.error("connect to: " + remoteHost + ":" + remotePort + " failed! == " + ExceptionUtil.getMessage(future.cause()));
                         ctx.channel().writeAndFlush(
                                 new DefaultSocks5CommandResponse(Socks5CommandStatus.FAILURE, request.dstAddrType()));
                         SocketChannelUtils.closeOnFlush(ctx.channel());

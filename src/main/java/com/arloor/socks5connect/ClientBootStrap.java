@@ -6,24 +6,28 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.arloor.socks5connect.http.HttpServerInitializer;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.socket.ServerSocketChannel;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.HttpObjectAggregator;
-import io.netty.handler.codec.http.HttpRequestDecoder;
-import io.netty.handler.codec.http.HttpResponseEncoder;
+import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.socksx.v5.Socks5AddressType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.file.Files;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 
+import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
+import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
+
 public final class ClientBootStrap {
 
+    private static String[] args;
     private static Logger logger = LoggerFactory.getLogger(ClientBootStrap.class.getSimpleName());
 
     public static final Class<? extends ServerSocketChannel> clazzServerSocketChannel = OsHelper.serverSocketChannelClazz();
@@ -31,8 +35,9 @@ public final class ClientBootStrap {
 
     private static int socks5Port = 1080;
     private static int httpPort = 3128;
+    private static int configPort = 1234;
 
-    public static int use = -1;
+    public static int use = 0;
     public static int SpeedLimitKB = 0;
     public static String user;
     public static String pass;
@@ -42,8 +47,14 @@ public final class ClientBootStrap {
 
     public static JSONArray servers;
 
+    public static final JSONObject getActiveServer() {
+        int use = ClientBootStrap.use;
+        JSONObject serverInfo = ClientBootStrap.servers.getJSONObject(use);
+        return serverInfo;
+    }
 
-    public static void initConfig(String[] args) throws IOException {
+
+    public static String initConfig() throws IOException {
         JSONObject config = null;
         if (args.length == 2 && args[0].equals("-c")) {
             File file = new File(args[1]);
@@ -85,20 +96,12 @@ public final class ClientBootStrap {
         auth = config.getBoolean("Auth");
         use = config.getInteger("Use");
         servers = config.getJSONArray("Servers");
-
-        System.out.println();
-        System.out.println();
-    }
-
-    public static void printUsage() {
-        System.out.println("> Usage: java -jar xxx.jar [-c client.json]");
-        System.out.println("> if \"client.json\" path is not set, it will the default client.json in classpath");
-        System.out.println("> which listen on 6666;and connect to ss5-server:80");
-        System.out.println();
+        return config.toJSONString();
     }
 
     public static void main(String[] args) throws Exception {
-        initConfig(args);
+        ClientBootStrap.args = args;
+        initConfig();
         EventLoopGroup bossGroup = OsHelper.buildEventLoopGroup(1);
         EventLoopGroup workerGroup = OsHelper.buildEventLoopGroup(0);
         try {
@@ -131,16 +134,38 @@ public final class ClientBootStrap {
                             socketChannel.pipeline().addLast(new SimpleChannelInboundHandler<FullHttpRequest>() {
 
                                 @Override
-                                protected void channelRead0(ChannelHandlerContext channelHandlerContext, FullHttpRequest fullHttpRequest) throws Exception {
-
+                                protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
+                                    boolean fromLocalhost = false;
+                                    SocketAddress clientAddr = ctx.channel().remoteAddress();
+                                    if (clientAddr instanceof InetSocketAddress) {
+                                        fromLocalhost = ((InetSocketAddress) clientAddr).getAddress().isLoopbackAddress();
+                                    }
+                                    // reload config
+                                    if (fromLocalhost && "/reload".equals(request.uri())) {
+                                        logger.info("reload");
+                                        try {
+                                            String config = ClientBootStrap.initConfig();
+                                            FullHttpResponse response = new DefaultFullHttpResponse(request.protocolVersion(), HttpResponseStatus.OK,
+                                                    Unpooled.wrappedBuffer(config.getBytes()));
+                                            response.headers()
+                                                    .set(CONTENT_TYPE, "application/json; charset=utf-8")
+                                                    .setInt(CONTENT_LENGTH, response.content().readableBytes());
+                                            ctx.channel().writeAndFlush(response);
+                                        } catch (IOException e) {
+                                            e.printStackTrace();
+                                        }
+                                        SocketChannelUtils.closeOnFlush(ctx.channel());
+                                        return;
+                                    }
                                 }
                             });
                         }
                     });
-            Channel configChannel = configBootstrap.bind(1234).sync().channel();
+            Channel configChannel = configBootstrap.bind(configPort).sync().channel();
 
             httpServerChannel.closeFuture().sync();
             socks5ServerChannel.closeFuture().sync();
+            configChannel.closeFuture().sync();
         } finally {
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
