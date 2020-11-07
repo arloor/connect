@@ -129,7 +129,7 @@ public final class ClientBootStrap {
                         }
                     });
             Channel configChannel = configBootstrap.bind(config.getConfigPort()).sync().channel();
-
+            logger.info("init completed!");
             httpServerChannel.closeFuture().sync();
             socks5ServerChannel.closeFuture().sync();
             configChannel.closeFuture().sync();
