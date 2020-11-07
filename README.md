@@ -8,29 +8,24 @@
 
 ```json
 {
-  "Socks5Port": 1080,
-  "HttpPort": 3128,
-  "SpeedLimitKB": 0,
-  "Use": 0,
-  "Servers": [
+  "socks5Port": 1080,
+  "httpPort": 3128,
+  "configPort": 1234,
+  "speedLimitKB": 0,
+  "use": 0,
+  "servers": [
     {
-      "ProxyAddr": "https_server",
-      "ProxyPort": 443,
-      "UserName": "aaa",
-      "Password": "aaaaa"
-    },
-    {
-      "ProxyAddr": "localhost",
-      "ProxyPort": 443,
-      "UserName": "aaa",
-      "Password": "aaaaa"
+      "host": "localhost",
+      "port": 443,
+      "userName": "aaaa",
+      "password": "aaaaa"
     }
   ],
-  "User": "aaaa",
-  "Pass": "aaaa",
-  "Auth":true,
-  "SupportDomain": true,
-  "SupportIPv4": true,
-  "SupportIPv6": false
+  "user": "aaaa",
+  "pass": "aaaa",
+  "auth": true,
+  "supportDomain": true,
+  "supportIPv4": true,
+  "supportIPv6": false
 }
 ```
