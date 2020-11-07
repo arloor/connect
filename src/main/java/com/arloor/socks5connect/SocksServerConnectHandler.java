@@ -1,7 +1,6 @@
 
 package com.arloor.socks5connect;
 
-import com.alibaba.fastjson.JSONObject;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.handler.codec.socksx.SocksMessage;
@@ -33,10 +32,9 @@ public final class SocksServerConnectHandler extends SimpleChannelInboundHandler
 
     public SocksServerConnectHandler() {
         super();
-        JSONObject serverInfo = ClientBootStrap.getActiveServer();
-        remotePort = serverInfo.getInteger("ProxyPort");
-        remoteHost = serverInfo.getString("ProxyAddr");
-        basicAuth = Base64.getEncoder().encodeToString((serverInfo.getString("UserName") + ":" + serverInfo.getString("Password")).getBytes());
+        remotePort = ClientBootStrap.config.getRemotePort();
+        remoteHost = ClientBootStrap.config.getRemoteHost();
+        basicAuth = ClientBootStrap.config.getRemoteBasicAuth();
     }
 
     private final Bootstrap b = new Bootstrap();

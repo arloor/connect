@@ -1,6 +1,5 @@
 package com.arloor.socks5connect.http;
 
-import com.alibaba.fastjson.JSONObject;
 import com.arloor.socks5connect.ClientBootStrap;
 import com.arloor.socks5connect.ExceptionUtil;
 import com.arloor.socks5connect.SocketChannelUtils;
@@ -108,8 +107,7 @@ public class HttpConnectHandler extends ChannelInboundHandlerAdapter {
 
     public HttpConnectHandler() {
         super();
-        JSONObject serverInfo = ClientBootStrap.getActiveServer();
-        this.remotePort = serverInfo.getInteger("ProxyPort");
-        this.remoteHost = serverInfo.getString("ProxyAddr");
+        this.remotePort = ClientBootStrap.config.getRemotePort();
+        this.remoteHost = ClientBootStrap.config.getRemoteHost();
     }
 }

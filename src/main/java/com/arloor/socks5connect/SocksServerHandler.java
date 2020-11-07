@@ -36,7 +36,7 @@ public final class SocksServerHandler extends SimpleChannelInboundHandler<SocksM
                 }
 
                 if (socksRequest instanceof Socks5InitialRequest) {
-                    if(ClientBootStrap.auth&&!fromLocalhost){//需要密码认证
+                    if(ClientBootStrap.config.isAuth()&&!fromLocalhost){//需要密码认证
                         ctx.pipeline().addFirst(new Socks5PasswordAuthRequestDecoder());
                         ctx.write(new DefaultSocks5InitialResponse(Socks5AuthMethod.PASSWORD));
                     }else{//不需要密码认证
@@ -46,7 +46,7 @@ public final class SocksServerHandler extends SimpleChannelInboundHandler<SocksM
                 } else if (socksRequest instanceof Socks5PasswordAuthRequest) {
 
                     Socks5PasswordAuthRequest authRequest=(Socks5PasswordAuthRequest) socksRequest;
-                    if(authRequest.username().equals(ClientBootStrap.user)&&authRequest.password().equals(ClientBootStrap.pass)){
+                    if(authRequest.username().equals(ClientBootStrap.config.getUser())&&authRequest.password().equals(ClientBootStrap.config.getPass())){
                         ctx.pipeline().addFirst(new Socks5CommandRequestDecoder());
                         ctx.write(new DefaultSocks5PasswordAuthResponse(Socks5PasswordAuthStatus.SUCCESS));
                     }else{

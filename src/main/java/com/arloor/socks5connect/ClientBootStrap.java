@@ -1,10 +1,8 @@
 
 package com.arloor.socks5connect;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
 import com.arloor.socks5connect.http.HttpServerInitializer;
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
@@ -33,29 +31,12 @@ public final class ClientBootStrap {
     public static final Class<? extends ServerSocketChannel> clazzServerSocketChannel = OsHelper.serverSocketChannelClazz();
     public static final Class<? extends SocketChannel> clazzSocketChannel = OsHelper.socketChannelClazz();
 
-    private static int socks5Port = 1080;
-    private static int httpPort = 3128;
-    private static int configPort = 1234;
-
-    public static int use = 0;
-    public static int SpeedLimitKB = 0;
-    public static String user;
-    public static String pass;
-    public static boolean auth;
+    public static Config config;
 
     public static LinkedHashSet<Socks5AddressType> blockedAddressType = new LinkedHashSet<>();
 
-    public static JSONArray servers;
-
-    public static final JSONObject getActiveServer() {
-        int use = ClientBootStrap.use;
-        JSONObject serverInfo = ClientBootStrap.servers.getJSONObject(use);
-        return serverInfo;
-    }
-
 
     public static String initConfig() throws IOException {
-        JSONObject config = null;
         if (args.length == 2 && args[0].equals("-c")) {
             File file = new File(args[1]);
             logger.info("config @" + file.getAbsolutePath());
@@ -66,7 +47,8 @@ public final class ClientBootStrap {
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             Files.copy(file.toPath(), outputStream);
-            config = JSON.parseObject(outputStream.toString());
+            config = JsonUtil.fromJson(outputStream.toString(), new TypeReference<Config>() {
+            });
             outputStream.close();
         } else {
             //        读取jar中resources下的sogo.json
@@ -78,25 +60,10 @@ public final class ClientBootStrap {
                 buffer.append(line);
             }
             String input = buffer.toString();
-            config = JSON.parseObject(input);
+            config = JsonUtil.fromJson(input, new TypeReference<Config>() {
+            });
         }
-
-        logger.info("config : " + config);
-        if (config.containsKey("SupportDomain") && !config.getBoolean("SupportDomain"))
-            blockedAddressType.add(Socks5AddressType.DOMAIN);
-        if (config.containsKey("SupportIPv4") && !config.getBoolean("SupportIPv4"))
-            blockedAddressType.add(Socks5AddressType.IPv4);
-        if (config.containsKey("SupportIPv6") && !config.getBoolean("SupportIPv6"))
-            blockedAddressType.add(Socks5AddressType.IPv6);
-        socks5Port = config.getInteger("Socks5Port");
-        httpPort = config.getInteger("HttpPort");
-        user = config.getString("User");
-        SpeedLimitKB = config.getInteger("SpeedLimitKB");
-        pass = config.getString("Pass");
-        auth = config.getBoolean("Auth");
-        use = config.getInteger("Use");
-        servers = config.getJSONArray("Servers");
-        return config.toJSONString();
+        return JsonUtil.toJson(config);
     }
 
     public static void main(String[] args) throws Exception {
@@ -113,14 +80,14 @@ public final class ClientBootStrap {
                     .childOption(ChannelOption.AUTO_READ, Boolean.FALSE)
                     .childHandler(new HttpServerInitializer());
 
-            Channel httpServerChannel = httpBootStrap.bind(httpPort).sync().channel();
+            Channel httpServerChannel = httpBootStrap.bind(config.getHttpPort()).sync().channel();
 
             // socks5 proxy bootstrap
             ServerBootstrap socks5BootStrap = new ServerBootstrap();
             socks5BootStrap.group(bossGroup, workerGroup)
                     .channel(clazzServerSocketChannel)
                     .childHandler(new SocksServerInitializer());
-            Channel socks5ServerChannel = socks5BootStrap.bind(socks5Port).sync().channel();
+            Channel socks5ServerChannel = socks5BootStrap.bind(config.getSocks5Port()).sync().channel();
 
             ServerBootstrap configBootstrap = new ServerBootstrap();
             configBootstrap.group(bossGroup, workerGroup)
@@ -161,7 +128,7 @@ public final class ClientBootStrap {
                             });
                         }
                     });
-            Channel configChannel = configBootstrap.bind(configPort).sync().channel();
+            Channel configChannel = configBootstrap.bind(config.getConfigPort()).sync().channel();
 
             httpServerChannel.closeFuture().sync();
             socks5ServerChannel.closeFuture().sync();

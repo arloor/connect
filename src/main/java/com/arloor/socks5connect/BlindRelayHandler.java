@@ -1,7 +1,6 @@
 
 package com.arloor.socks5connect;
 
-import com.alibaba.fastjson.JSONObject;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -20,11 +19,10 @@ import java.net.SocketAddress;
 import java.util.Base64;
 import java.util.Objects;
 
-import static com.arloor.socks5connect.ClientBootStrap.use;
 
 public final class BlindRelayHandler extends ChannelInboundHandlerAdapter {
 
-    private static final String clientAuth = "Basic " + Base64.getEncoder().encodeToString((ClientBootStrap.user + ":" + ClientBootStrap.pass).getBytes());
+    private static final String clientAuth = "Basic " + ClientBootStrap.config.getClientBasicAuth();
 
     private static Logger logger = LoggerFactory.getLogger(BlindRelayHandler.class.getSimpleName());
 
@@ -33,8 +31,7 @@ public final class BlindRelayHandler extends ChannelInboundHandlerAdapter {
 
     public BlindRelayHandler(Channel relayChannel) {
         this.relayChannel = relayChannel;
-        JSONObject serverInfo = ClientBootStrap.getActiveServer();
-        this.basicAuth = Base64.getEncoder().encodeToString((serverInfo.getString("UserName") + ":" + serverInfo.getString("Password")).getBytes());
+        this.basicAuth = ClientBootStrap.config.getRemoteBasicAuth();
     }
 
     @Override
@@ -62,7 +59,7 @@ public final class BlindRelayHandler extends ChannelInboundHandlerAdapter {
                     fromLocalhost = ((InetSocketAddress) clientAddr).getAddress().isLoopbackAddress();
                 }
                 request = (HttpRequest) msg;
-                if (ClientBootStrap.auth && !fromLocalhost) {
+                if (ClientBootStrap.config.isAuth() && !fromLocalhost) {
                     String authorization = request.headers().get("Proxy-Authorization", "Basic " + basicAuth);
                     if (!Objects.equals(authorization, clientAuth)) {
                         logger.warn(String.format("%s %s %s !wrong_auth{%s}", clientAddr.toString(), request.method(), request.uri(), authorization));
