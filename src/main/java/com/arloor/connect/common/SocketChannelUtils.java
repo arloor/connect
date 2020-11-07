@@ -1,5 +1,5 @@
 
-package com.arloor.socks5connect;
+package com.arloor.connect.common;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;

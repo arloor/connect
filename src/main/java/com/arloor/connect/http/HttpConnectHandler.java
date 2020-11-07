@@ -1,22 +1,12 @@
-package com.arloor.socks5connect.http;
+package com.arloor.connect.http;
 
-import com.arloor.socks5connect.ClientBootStrap;
-import com.arloor.socks5connect.ExceptionUtil;
-import com.arloor.socks5connect.SocketChannelUtils;
+import com.arloor.connect.ClientBootStrap;
+import com.arloor.connect.common.ExceptionUtil;
+import com.arloor.connect.common.SocketChannelUtils;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.handler.codec.http.DefaultHttpResponse;
-import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.ssl.ClientAuth;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
@@ -26,12 +16,9 @@ import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLException;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.List;
-import java.util.Random;
 
-import static com.arloor.socks5connect.ClientBootStrap.clazzSocketChannel;
-import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
+import static com.arloor.connect.ClientBootStrap.clazzSocketChannel;
 
 public class HttpConnectHandler extends ChannelInboundHandlerAdapter {
 

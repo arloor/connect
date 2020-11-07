@@ -1,4 +1,4 @@
-package com.arloor.socks5connect;
+package com.arloor.connect.common;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.List;
-import java.util.Map;
 
 public class JsonUtil {
     private static ObjectMapper MAPPER;

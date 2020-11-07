@@ -1,6 +1,9 @@
 
-package com.arloor.socks5connect;
+package com.arloor.connect.socks5;
 
+import com.arloor.connect.ClientBootStrap;
+import com.arloor.connect.common.ExceptionUtil;
+import com.arloor.connect.common.SocketChannelUtils;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -80,7 +83,7 @@ public final class SocksServerHandler extends SimpleChannelInboundHandler<SocksM
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable throwable) {
-        logger.warn(ctx.channel().remoteAddress()+" "+ExceptionUtil.getMessage(throwable));
+        logger.warn(ctx.channel().remoteAddress() + " " + ExceptionUtil.getMessage(throwable));
         SocketChannelUtils.closeOnFlush(ctx.channel());
     }
 }

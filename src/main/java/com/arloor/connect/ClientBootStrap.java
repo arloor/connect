@@ -1,7 +1,12 @@
 
-package com.arloor.socks5connect;
+package com.arloor.connect;
 
-import com.arloor.socks5connect.http.HttpServerInitializer;
+import com.arloor.connect.common.Config;
+import com.arloor.connect.common.JsonUtil;
+import com.arloor.connect.common.OsHelper;
+import com.arloor.connect.common.SocketChannelUtils;
+import com.arloor.connect.http.HttpServerInitializer;
+import com.arloor.connect.socks5.SocksServerInitializer;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.Unpooled;

@@ -1,6 +1,7 @@
 
-package com.arloor.socks5connect;
+package com.arloor.connect.socks5;
 
+import com.arloor.connect.ClientBootStrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.socksx.SocksPortUnificationServerHandler;

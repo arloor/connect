@@ -1,6 +1,10 @@
 
-package com.arloor.socks5connect;
+package com.arloor.connect.socks5;
 
+import com.arloor.connect.ClientBootStrap;
+import com.arloor.connect.common.BlindRelayHandler;
+import com.arloor.connect.common.ExceptionUtil;
+import com.arloor.connect.common.SocketChannelUtils;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.handler.codec.socksx.SocksMessage;
@@ -14,10 +18,7 @@ import io.netty.util.concurrent.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Base64;
-import java.util.Random;
-
-import static com.arloor.socks5connect.ClientBootStrap.clazzSocketChannel;
+import static com.arloor.connect.ClientBootStrap.clazzSocketChannel;
 
 //不可共享
 //@ChannelHandler.Sharable

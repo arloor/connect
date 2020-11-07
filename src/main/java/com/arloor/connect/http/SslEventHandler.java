@@ -1,22 +1,15 @@
-package com.arloor.socks5connect.http;
+package com.arloor.connect.http;
 
-import com.arloor.socks5connect.BlindRelayHandler;
-import com.arloor.socks5connect.SocketChannelUtils;
+import com.arloor.connect.common.BlindRelayHandler;
+import com.arloor.connect.common.SocketChannelUtils;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpRequestEncoder;
-import io.netty.handler.codec.http.HttpResponseEncoder;
-import io.netty.handler.codec.http.HttpVersion;
-import io.netty.handler.logging.LogLevel;
-import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 
 public class SslEventHandler extends ChannelInboundHandlerAdapter {
     private static final Logger log = LoggerFactory.getLogger(SslEventHandler.class);

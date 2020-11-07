@@ -1,4 +1,4 @@
-package com.arloor.socks5connect;
+package com.arloor.connect.common;
 
 import java.io.IOException;
 import java.io.PrintWriter;

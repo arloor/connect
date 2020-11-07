@@ -1,4 +1,4 @@
-package com.arloor.socks5connect;
+package com.arloor.connect.common;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.EpollEventLoopGroup;
@@ -17,7 +17,6 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.management.ManagementFactory;
 import java.util.Optional;
-import java.util.function.Function;
 
 public class OsHelper {
     private static final Logger logger = LoggerFactory.getLogger(OsHelper.class);

@@ -1,4 +1,4 @@
-package com.arloor.socks5connect.http;
+package com.arloor.connect.http;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
