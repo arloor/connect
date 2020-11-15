@@ -85,14 +85,16 @@ public final class ClientBootStrap {
                     .childOption(ChannelOption.AUTO_READ, Boolean.FALSE)
                     .childHandler(new HttpServerInitializer());
 
-            Channel httpServerChannel = httpBootStrap.bind(config.getHttpPort()).sync().channel();
+            Channel httpServerChannel = httpBootStrap.bind("127.0.0.1",config.getHttpPort()).sync().channel();
+            Channel httpServerChannel6 = httpBootStrap.bind("::1",config.getHttpPort()).sync().channel();
 
             // socks5 proxy bootstrap
             ServerBootstrap socks5BootStrap = new ServerBootstrap();
             socks5BootStrap.group(bossGroup, workerGroup)
                     .channel(clazzServerSocketChannel)
                     .childHandler(new SocksServerInitializer());
-            Channel socks5ServerChannel = socks5BootStrap.bind(config.getSocks5Port()).sync().channel();
+            Channel socks5ServerChannel = socks5BootStrap.bind("127.0.0.1",config.getSocks5Port()).sync().channel();
+            Channel socks5ServerChannel6 = socks5BootStrap.bind("::1",config.getSocks5Port()).sync().channel();
 
             ServerBootstrap configBootstrap = new ServerBootstrap();
             configBootstrap.group(bossGroup, workerGroup)
@@ -133,11 +135,15 @@ public final class ClientBootStrap {
                             });
                         }
                     });
-            Channel configChannel = configBootstrap.bind(config.getConfigPort()).sync().channel();
+            Channel configChannel = configBootstrap.bind("127.0.0.1",config.getConfigPort()).sync().channel();
+            Channel configChannel6 = configBootstrap.bind("::1",config.getConfigPort()).sync().channel();
             logger.info("init completed!");
             httpServerChannel.closeFuture().sync();
             socks5ServerChannel.closeFuture().sync();
             configChannel.closeFuture().sync();
+            httpServerChannel6.closeFuture().sync();
+            socks5ServerChannel6.closeFuture().sync();
+            configChannel6.closeFuture().sync();
         } finally {
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
