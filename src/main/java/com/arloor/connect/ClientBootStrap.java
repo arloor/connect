@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.file.Files;
@@ -76,6 +77,18 @@ public final class ClientBootStrap {
         initConfig();
         EventLoopGroup bossGroup = OsHelper.buildEventLoopGroup(1);
         EventLoopGroup workerGroup = OsHelper.buildEventLoopGroup(0);
+        InetSocketAddress socks5Addr;
+        InetSocketAddress httpAddr;
+        InetSocketAddress configAddr;
+        if (config.isLocalhost()) {
+            socks5Addr=new InetSocketAddress(InetAddress.getLoopbackAddress(),config.getSocks5Port());
+            httpAddr=new InetSocketAddress(InetAddress.getLoopbackAddress(),config.getHttpPort());
+            configAddr=new InetSocketAddress(InetAddress.getLoopbackAddress(),config.getConfigPort());
+        }else {
+            socks5Addr=new InetSocketAddress(config.getSocks5Port());
+            httpAddr=new InetSocketAddress(config.getHttpPort());
+            configAddr=new InetSocketAddress(config.getConfigPort());
+        }
         try {
 
             // http proxy bootstrap
@@ -85,16 +98,14 @@ public final class ClientBootStrap {
                     .childOption(ChannelOption.AUTO_READ, Boolean.FALSE)
                     .childHandler(new HttpServerInitializer());
 
-            Channel httpServerChannel = httpBootStrap.bind("127.0.0.1",config.getHttpPort()).sync().channel();
-            Channel httpServerChannel6 = httpBootStrap.bind("::1",config.getHttpPort()).sync().channel();
+            Channel httpServerChannel = httpBootStrap.bind(httpAddr).sync().channel();
 
             // socks5 proxy bootstrap
             ServerBootstrap socks5BootStrap = new ServerBootstrap();
             socks5BootStrap.group(bossGroup, workerGroup)
                     .channel(clazzServerSocketChannel)
                     .childHandler(new SocksServerInitializer());
-            Channel socks5ServerChannel = socks5BootStrap.bind("127.0.0.1",config.getSocks5Port()).sync().channel();
-            Channel socks5ServerChannel6 = socks5BootStrap.bind("::1",config.getSocks5Port()).sync().channel();
+            Channel socks5ServerChannel = socks5BootStrap.bind(socks5Addr).sync().channel();
 
             ServerBootstrap configBootstrap = new ServerBootstrap();
             configBootstrap.group(bossGroup, workerGroup)
@@ -135,15 +146,11 @@ public final class ClientBootStrap {
                             });
                         }
                     });
-            Channel configChannel = configBootstrap.bind("127.0.0.1",config.getConfigPort()).sync().channel();
-            Channel configChannel6 = configBootstrap.bind("::1",config.getConfigPort()).sync().channel();
+            Channel configChannel = configBootstrap.bind(configAddr).sync().channel();
             logger.info("init completed!");
             httpServerChannel.closeFuture().sync();
             socks5ServerChannel.closeFuture().sync();
             configChannel.closeFuture().sync();
-            httpServerChannel6.closeFuture().sync();
-            socks5ServerChannel6.closeFuture().sync();
-            configChannel6.closeFuture().sync();
         } finally {
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();

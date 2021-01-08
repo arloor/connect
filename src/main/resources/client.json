@@ -17,5 +17,6 @@
   "auth": true,
   "supportDomain": true,
   "supportIPv4": true,
-  "supportIPv6": false
+  "supportIPv6": false,
+  "localhost": true
 }

@@ -16,6 +16,7 @@ public class Config {
     private boolean supportDomain = true;
     private boolean supportIPv4 = true;
     private boolean supportIPv6 = false;
+    private boolean localhost = true;
 
     public int getRemotePort() {
         return servers.get(use).getPort();
@@ -128,6 +129,15 @@ public class Config {
     public void setSupportIPv6(boolean supportIPv6) {
         this.supportIPv6 = supportIPv6;
     }
+
+    public boolean isLocalhost() {
+        return localhost;
+    }
+
+    public void setLocalhost(boolean localhost) {
+        this.localhost = localhost;
+    }
+
 
     private static final class Server {
         private String host;
