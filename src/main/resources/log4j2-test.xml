@@ -17,7 +17,7 @@
         <RollingRandomAccessFile name="log" fileName="${MSG_LOG_HOME}/connect.log" immediateFlush="false"
                                  append="true" filePattern="${MSG_LOG_HOME}/connect-%d{MM-dd-yyyy}-%i.log.gz">
             <PatternLayout>
-                <Pattern>%d %p %c{1.} [%t] %m %ex%n</Pattern>
+                <Pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} - %msg%n</Pattern>
             </PatternLayout>
             <ThresholdFilter level="info" onMatch="ACCEPT" onMismatch="DENY"/>
             <Policies>
