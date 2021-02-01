@@ -15,7 +15,7 @@
         </Console>
         <!-- Async Loggers will auto-flush in batches, so switch off immediateFlush. -->
         <RollingRandomAccessFile name="log" fileName="${MSG_LOG_HOME}/connect.log" immediateFlush="false"
-                                 append="true" filePattern="${MSG_LOG_HOME}/connect-%d{MM-dd-yyyy}-%i.log.gz">
+                                 append="true" filePattern="${MSG_LOG_HOME}/connect-%d{MM-dd-yyyy}-%i.log">
             <PatternLayout>
                 <Pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} - %msg%n</Pattern>
             </PatternLayout>
