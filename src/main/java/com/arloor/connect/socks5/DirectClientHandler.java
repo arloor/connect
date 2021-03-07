@@ -37,7 +37,7 @@ public final class DirectClientHandler extends ChannelInboundHandlerAdapter {
                     .protocols("TLSv1.3")
                     .sslProvider(SslProvider.JDK)
                     .clientAuth(ClientAuth.NONE)
-                    .ciphers(ciphers)
+//                    .ciphers(ciphers)
                     .build();
         } catch (SSLException e) {
             e.printStackTrace();

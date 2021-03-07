@@ -42,7 +42,7 @@ public class HttpConnectHandler extends ChannelInboundHandlerAdapter {
                     .protocols("TLSv1.3", "TLSv1.2")
                     .sslProvider(SslProvider.JDK)
                     .clientAuth(ClientAuth.NONE)
-                    .ciphers(ciphers)
+//                    .ciphers(ciphers)
                     .build();
         } catch (SSLException e) {
             e.printStackTrace();
