@@ -54,10 +54,10 @@ public class OsHelper {
                 return new KQueueEventLoopGroup(num);
             }
         },
-        Unix("unix", EpollServerSocketChannel.class, EpollSocketChannel.class) {
+        Unix("unix", NioServerSocketChannel.class, NioSocketChannel.class) {
             @Override
             EventLoopGroup buildEventLoopGroup(int num) {
-                return new EpollEventLoopGroup(num);
+                return new NioEventLoopGroup(num);
             }
         },
         Windows("windows", NioServerSocketChannel.class, NioSocketChannel.class) {

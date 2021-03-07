@@ -40,9 +40,9 @@ public class HttpConnectHandler extends ChannelInboundHandlerAdapter {
         try {
             sslContext = SslContextBuilder.forClient()
                     .protocols("TLSv1.3", "TLSv1.2")
-                    .sslProvider(SslProvider.OPENSSL)
+                    .sslProvider(SslProvider.JDK)
                     .clientAuth(ClientAuth.NONE)
-//                    .ciphers(ciphers)
+                    .ciphers(ciphers)
                     .build();
         } catch (SSLException e) {
             e.printStackTrace();
