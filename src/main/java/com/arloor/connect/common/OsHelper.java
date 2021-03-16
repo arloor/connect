@@ -4,9 +4,6 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.epoll.EpollSocketChannel;
-import io.netty.channel.kqueue.KQueueEventLoopGroup;
-import io.netty.channel.kqueue.KQueueServerSocketChannel;
-import io.netty.channel.kqueue.KQueueSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.ServerSocketChannel;
 import io.netty.channel.socket.SocketChannel;
@@ -48,10 +45,10 @@ public class OsHelper {
     }
 
     private enum OS {
-        MacOS("mac", KQueueServerSocketChannel.class, KQueueSocketChannel.class) {
+        MacOS("mac", NioServerSocketChannel.class, NioSocketChannel.class) {
             @Override
             EventLoopGroup buildEventLoopGroup(int num) {
-                return new KQueueEventLoopGroup(num);
+                return new NioEventLoopGroup(num);
             }
         },
         Unix("unix", EpollServerSocketChannel.class, EpollSocketChannel.class) {
