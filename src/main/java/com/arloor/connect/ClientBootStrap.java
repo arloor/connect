@@ -7,6 +7,7 @@ import com.arloor.connect.common.OsHelper;
 import com.arloor.connect.common.SocketChannelUtils;
 import com.arloor.connect.http.HttpServerInitializer;
 import com.arloor.connect.socks5.SocksServerInitializer;
+import com.arloor.forwardproxy.HttpProxyServer;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.Unpooled;
@@ -43,7 +44,7 @@ public final class ClientBootStrap {
 
 
     public static String initConfig() throws IOException {
-        if (args.length == 2 && args[0].equals("-c")) {
+        if (args.length >= 2 && args[0].equals("-c")) {
             File file = new File(args[1]);
             logger.info("config @" + file.getAbsolutePath());
             if (!file.exists()) {
@@ -81,13 +82,13 @@ public final class ClientBootStrap {
         InetSocketAddress httpAddr;
         InetSocketAddress configAddr;
         if (config.isLocalhost()) {
-            socks5Addr=new InetSocketAddress(InetAddress.getLoopbackAddress(),config.getSocks5Port());
-            httpAddr=new InetSocketAddress(InetAddress.getLoopbackAddress(),config.getHttpPort());
-            configAddr=new InetSocketAddress(InetAddress.getLoopbackAddress(),config.getConfigPort());
-        }else {
-            socks5Addr=new InetSocketAddress(config.getSocks5Port());
-            httpAddr=new InetSocketAddress(config.getHttpPort());
-            configAddr=new InetSocketAddress(config.getConfigPort());
+            socks5Addr = new InetSocketAddress(InetAddress.getLoopbackAddress(), config.getSocks5Port());
+            httpAddr = new InetSocketAddress(InetAddress.getLoopbackAddress(), config.getHttpPort());
+            configAddr = new InetSocketAddress(InetAddress.getLoopbackAddress(), config.getConfigPort());
+        } else {
+            socks5Addr = new InetSocketAddress(config.getSocks5Port());
+            httpAddr = new InetSocketAddress(config.getHttpPort());
+            configAddr = new InetSocketAddress(config.getConfigPort());
         }
         try {
 
@@ -148,6 +149,14 @@ public final class ClientBootStrap {
                     });
             Channel configChannel = configBootstrap.bind(configAddr).sync().channel();
             logger.info("init completed!");
+
+            if (args.length == 3) {
+                String[] httpsProxyArgs = new String[2];
+                httpsProxyArgs[0] = "-c";
+                httpsProxyArgs[1] = args[2];
+                HttpProxyServer.main(httpsProxyArgs);
+            }
+
             httpServerChannel.closeFuture().sync();
             socks5ServerChannel.closeFuture().sync();
             configChannel.closeFuture().sync();

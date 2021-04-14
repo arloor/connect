@@ -13,6 +13,11 @@
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>com.arloor</groupId>
+            <artifactId>httpproxy</artifactId>
+            <version>1.0-lan-SNAPSHOT</version>
+        </dependency>
         <!--Jackson required包-->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -73,7 +78,11 @@
             <artifactId>slf4j-api</artifactId>
             <version>1.7.25</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.2</version>
+        </dependency>
     </dependencies>
 
     <build>
