@@ -26,6 +26,7 @@ import java.net.SocketAddress;
 import java.nio.file.Files;
 import java.util.LinkedHashSet;
 import java.util.Objects;
+import java.util.Properties;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
@@ -151,10 +152,11 @@ public final class ClientBootStrap {
             logger.info("init completed!");
 
             if (args.length == 3) {
-                String[] httpsProxyArgs = new String[2];
-                httpsProxyArgs[0] = "-c";
-                httpsProxyArgs[1] = args[2];
-                HttpProxyServer.main(httpsProxyArgs);
+                String proxyProperties = args[2];
+                Properties properties = parseProperties(proxyProperties);
+                com.arloor.forwardproxy.vo.Config config = com.arloor.forwardproxy.vo.Config.parse(properties);
+                Channel httpsChannel = HttpProxyServer.startSSl(bossGroup, workerGroup, config.ssl());
+                httpsChannel.closeFuture().sync();
             }
 
             httpServerChannel.closeFuture().sync();
@@ -164,5 +166,19 @@ public final class ClientBootStrap {
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
         }
+    }
+
+    private static Properties parseProperties(String propertiesPath) {
+        Properties properties = new Properties();
+        try {
+            if (propertiesPath != null) {
+                properties.load(new FileReader(new File(propertiesPath)));
+            } else {
+                properties.load(HttpProxyServer.class.getClassLoader().getResourceAsStream("proxy.properties"));
+            }
+        } catch (Exception e) {
+            logger.error("loadProperties Error!", e);
+        }
+        return properties;
     }
 }
