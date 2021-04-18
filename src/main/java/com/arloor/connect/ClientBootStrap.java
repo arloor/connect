@@ -5,6 +5,7 @@ import com.arloor.connect.common.Config;
 import com.arloor.connect.common.JsonUtil;
 import com.arloor.connect.common.OsHelper;
 import com.arloor.connect.common.SocketChannelUtils;
+import com.arloor.connect.dnspod.DnspodManager;
 import com.arloor.connect.http.HttpServerInitializer;
 import com.arloor.connect.socks5.SocksServerInitializer;
 import com.arloor.forwardproxy.HttpProxyServer;
@@ -75,6 +76,19 @@ public final class ClientBootStrap {
     }
 
     public static void main(String[] args) throws Exception {
+        if (System.getenv("dnspod_token") != null && System.getenv("dnspod_domain") != null && System.getenv("dnspod_subdomain") != null) {
+            new Thread(()-> {
+                while(true){
+                    try {
+                        DnspodManager.ddns();
+                        Thread.sleep(60000);
+                    } catch (IOException | InterruptedException e) {
+                        logger.error("ddns错误！ ",e);
+                    }
+                }
+            }).start();
+        }
+
         ClientBootStrap.args = args;
         initConfig();
         EventLoopGroup bossGroup = OsHelper.buildEventLoopGroup(1);
