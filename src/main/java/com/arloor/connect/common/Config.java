@@ -1,9 +1,12 @@
 package com.arloor.connect.common;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
 
 public class Config {
+    private static final String POUND_SIGN = "\u00A3";
+
     private int httpPort = 3128;
     private int socks5Port = 1080;
     private int configPort = 1234;
@@ -18,6 +21,7 @@ public class Config {
     private boolean supportIPv6 = false;
     private boolean localhost = true;
 
+
     public int getRemotePort() {
         return servers.get(use).getPort();
     }
@@ -26,12 +30,29 @@ public class Config {
         return servers.get(use).getHost();
     }
 
+    /**
+     * https://datatracker.ietf.org/doc/html/rfc7617
+     * The user's name is "test", and the password is the string "123"
+     * followed by the Unicode character U+00A3 (POUND SIGN).  Using the
+     * character encoding scheme UTF-8, the user-pass becomes:
+     * <p>
+     * 't' 'e' 's' 't' ':' '1' '2' '3' pound
+     * 74  65  73  74  3A  31  32  33  C2  A3
+     * <p>
+     * Encoding this octet sequence in Base64 ([RFC4648], Section 4) yields:
+     * <p>
+     * dGVzdDoxMjPCow==
+     *
+     * @return
+     */
     public String getRemoteBasicAuth() {
-        return Base64.getEncoder().encodeToString((servers.get(use).getUserName() + ":" + servers.get(use).getPassword()).getBytes());
+        Server server = servers.get(use);
+        String userPasswd = server.getUserName() + ":" + server.getPassword();
+        return Base64.getEncoder().encodeToString((userPasswd + POUND_SIGN).getBytes(StandardCharsets.UTF_8));
     }
 
     public String getClientBasicAuth() {
-        return Base64.getEncoder().encodeToString((user + ":" + pass).getBytes());
+        return Base64.getEncoder().encodeToString((user + ":" + pass + POUND_SIGN).getBytes());
     }
 
     public int getConfigPort() {
