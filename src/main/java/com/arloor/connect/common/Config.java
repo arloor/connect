@@ -48,13 +48,13 @@ public class Config {
     public String getRemoteBasicAuth() {
         Server server = servers.get(use);
         String userPasswd = server.getUserName() + ":" + server.getPassword();
-        return Base64.getEncoder().encodeToString((userPasswd + POUND_SIGN).getBytes(StandardCharsets.UTF_8));
+        userPasswd += POUND_SIGN;
+        return Base64.getEncoder().encodeToString(userPasswd.getBytes(StandardCharsets.UTF_8));
     }
 
     public String getClientBasicAuth() {
         String userPasswd = user + ":" + pass;
-        // 大多数客户端都没加POUND_SIGN,这里也不加
-//        return Base64.getEncoder().encodeToString(( userPasswd+ POUND_SIGN).getBytes(StandardCharsets.UTF_8));
+        userPasswd += POUND_SIGN;
         return Base64.getEncoder().encodeToString(userPasswd.getBytes(StandardCharsets.UTF_8));
     }
 
