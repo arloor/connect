@@ -100,11 +100,12 @@ public class Connector implements Runnable {
         Thread thread = new Thread(connector, "connector");
         thread.setDaemon(true);
         thread.start();
-        final SocketChannel socketChannel = connector.connect("sg.gcall.me", 80);
+        final SocketChannel socketChannel = connector.connect("www.arloor.com", 80);
         while (true) {
             try {
                 if (socketChannel.isOpen()) {
-                    writeAll(socketChannel, "GET / HTTP/1.1\r\nHost: sg.gcall.me\r\n\r\n");
+                    writeAll(socketChannel, "GET / HTTP/1.1\r\nHost: www.arloor.com\r\n\r\n");
+                    Thread.sleep(100);
                 } else {
                     System.out.println("closed");
                     break;
