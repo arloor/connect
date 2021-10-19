@@ -26,7 +26,7 @@ import static com.arloor.connect.ClientBootStrap.clazzSocketChannel;
 public final class SocksServerConnectHandler extends SimpleChannelInboundHandler<SocksMessage> {
 
     private static Logger logger = LoggerFactory.getLogger(SocksServerConnectHandler.class.getSimpleName());
-    private static String[] netflixSuffix =new String[]{"nflxso.net","nflxvideo.net","netflix.com"};
+    private static String[] netflixSuffix =new String[]{"nflxso.net","nflxvideo.net","netflix.com","nflxext.com"};
 
     public SocksServerConnectHandler() {
         super();

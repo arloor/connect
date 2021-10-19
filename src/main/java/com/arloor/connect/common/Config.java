@@ -94,6 +94,14 @@ public class Config {
         this.use = use;
     }
 
+    public int getSocks5netflixUse() {
+        return socks5netflixUse;
+    }
+
+    public void setSocks5netflixUse(int socks5netflixUse) {
+        this.socks5netflixUse = socks5netflixUse;
+    }
+
     public List<Server> getServers() {
         return servers;
     }
