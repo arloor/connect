@@ -12,6 +12,7 @@ public class Config {
     private int configPort = 1234;
     private int speedLimitKB = 0;
     private int use = 0;
+    private int socks5netflixUse = 0;
     private List<Server> servers;
     private String user;
     private String pass;
@@ -22,13 +23,15 @@ public class Config {
     private boolean localhost = true;
 
 
-    public int getRemotePort() {
-        return servers.get(use).getPort();
+    public Server getServer(){
+        return servers.get(use);
     }
 
-    public String getRemoteHost() {
-        return servers.get(use).getHost();
+    public Server getSocks5NetflixServer(){
+        return servers.get(socks5netflixUse);
     }
+
+
 
     /**
      * https://datatracker.ietf.org/doc/html/rfc7617
@@ -45,13 +48,6 @@ public class Config {
      *
      * @return
      */
-    public String getRemoteBasicAuth() {
-        Server server = servers.get(use);
-        String userPasswd = server.getUserName() + ":" + server.getPassword();
-        userPasswd += POUND_SIGN;
-        return Base64.getEncoder().encodeToString(userPasswd.getBytes(StandardCharsets.UTF_8));
-    }
-
     public String getClientBasicAuth() {
         String userPasswd = user + ":" + pass;
         userPasswd += POUND_SIGN;
@@ -163,11 +159,16 @@ public class Config {
     }
 
 
-    private static final class Server {
+    public static final class Server {
         private String host;
         private int port;
         private String userName;
         private String password;
+
+        public String base64Auth(){
+            String userPasswd = getUserName() + ":" + getPassword();
+            return Base64.getEncoder().encodeToString(userPasswd.getBytes(StandardCharsets.UTF_8));
+        }
 
         public String getHost() {
             return host;

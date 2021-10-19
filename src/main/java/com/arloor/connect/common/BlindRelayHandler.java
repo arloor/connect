@@ -30,7 +30,7 @@ public final class BlindRelayHandler extends ChannelInboundHandlerAdapter {
 
     public BlindRelayHandler(Channel relayChannel) {
         this.relayChannel = relayChannel;
-        this.basicAuth = ClientBootStrap.config.getRemoteBasicAuth();
+        this.basicAuth = ClientBootStrap.config.getServer().base64Auth();
     }
 
     @Override

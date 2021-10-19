@@ -3,6 +3,7 @@ package com.arloor.connect.socks5;
 
 import com.arloor.connect.ClientBootStrap;
 import com.arloor.connect.common.BlindRelayHandler;
+import com.arloor.connect.common.Config;
 import com.arloor.connect.common.ExceptionUtil;
 import com.arloor.connect.common.SocketChannelUtils;
 import io.netty.bootstrap.Bootstrap;
@@ -25,17 +26,10 @@ import static com.arloor.connect.ClientBootStrap.clazzSocketChannel;
 public final class SocksServerConnectHandler extends SimpleChannelInboundHandler<SocksMessage> {
 
     private static Logger logger = LoggerFactory.getLogger(SocksServerConnectHandler.class.getSimpleName());
-
-    private int remotePort = 80;
-    private String remoteHost;
-    private String basicAuth;
-
+    private static String[] netflixSuffix =new String[]{"nflxso.net","nflxvideo.net","netflix.com"};
 
     public SocksServerConnectHandler() {
         super();
-        remotePort = ClientBootStrap.config.getRemotePort();
-        remoteHost = ClientBootStrap.config.getRemoteHost();
-        basicAuth = ClientBootStrap.config.getRemoteBasicAuth();
     }
 
     private final Bootstrap b = new Bootstrap();
@@ -49,8 +43,10 @@ public final class SocksServerConnectHandler extends SimpleChannelInboundHandler
         } else if (message instanceof Socks5CommandRequest) {
             final Socks5CommandRequest request = (Socks5CommandRequest) message;
             //禁止CONNECT域名和ipv6
+            final String dstAddr = request.dstAddr();
+            Config.Server server=router(dstAddr);
             if (ClientBootStrap.blockedAddressType.contains(request.dstAddrType())) {
-                logger.warn("NOT support: " + request.dstAddr() + ":" + request.dstPort() + "  <<<<<  " + ctx.channel().remoteAddress());
+                logger.warn("NOT support: " + dstAddr + ":" + request.dstPort() + "  <<<<<  " + ctx.channel().remoteAddress());
                 ctx.close();
                 return;
             }
@@ -66,7 +62,7 @@ public final class SocksServerConnectHandler extends SimpleChannelInboundHandler
                                         ctx.channel().writeAndFlush(new DefaultSocks5CommandResponse(
                                                 Socks5CommandStatus.SUCCESS,
                                                 request.dstAddrType(),
-                                                request.dstAddr(),
+                                                dstAddr,
                                                 request.dstPort()));
 
                                 responseFuture.addListener(new ChannelFutureListener() {
@@ -78,7 +74,7 @@ public final class SocksServerConnectHandler extends SimpleChannelInboundHandler
                                             outboundChannel.pipeline().addLast(new BlindRelayHandler(ctx.channel()));
                                             outboundChannel.pipeline().remove("check");
 //                                            logger.info(request.dstAddr()+":"+request.dstPort()+"  <<<<<<<  "+ctx.channel().remoteAddress());
-                                            logger.info(ctx.channel().remoteAddress().toString() + " " + request.type() + " " + request.dstAddr() + ":" + request.dstPort());
+                                            logger.info(ctx.channel().remoteAddress().toString() + " " + request.type() + " " + dstAddr + ":" + request.dstPort());
                                             ctx.pipeline().addLast(new BlindRelayHandler(outboundChannel));
                                         }
                                     }
@@ -96,9 +92,8 @@ public final class SocksServerConnectHandler extends SimpleChannelInboundHandler
                     .channel(clazzSocketChannel)
                     .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
                     .option(ChannelOption.SO_KEEPALIVE, true)
-                    .handler(new DirectClientHandler(promise, request.dstAddr(), request.dstPort(), basicAuth));
-
-            b.connect(remoteHost, remotePort).addListener(new ChannelFutureListener() {
+                    .handler(new DirectClientHandler(promise, dstAddr, request.dstPort(), server.base64Auth()));
+            b.connect(server.getHost(), server.getPort()).addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {
                     if (future.isSuccess()) {
@@ -106,7 +101,7 @@ public final class SocksServerConnectHandler extends SimpleChannelInboundHandler
 //                        System.out.println("连接成功");
                     } else {
                         // Close the connection if the connection attempt has failed.
-                        logger.error("connect to: " + remoteHost + ":" + remotePort + " failed! == " + ExceptionUtil.getMessage(future.cause()));
+                        logger.error("connect to: " + server.getHost() + ":" + server.getPort() + " failed! == " + ExceptionUtil.getMessage(future.cause()));
                         ctx.channel().writeAndFlush(
                                 new DefaultSocks5CommandResponse(Socks5CommandStatus.FAILURE, request.dstAddrType()));
                         SocketChannelUtils.closeOnFlush(ctx.channel());
@@ -116,6 +111,15 @@ public final class SocksServerConnectHandler extends SimpleChannelInboundHandler
         } else {
             ctx.close();
         }
+    }
+
+    private Config.Server router(String dstAddr) {
+        for (String suffix : netflixSuffix) {
+            if (dstAddr.endsWith(suffix)){
+                return ClientBootStrap.config.getSocks5NetflixServer();
+            }
+        }
+        return ClientBootStrap.config.getServer();
     }
 
     @Override
