@@ -8,7 +8,6 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -100,12 +99,11 @@ public class Connector implements Runnable {
         Thread thread = new Thread(connector, "connector");
         thread.setDaemon(true);
         thread.start();
-        final SocketChannel socketChannel = connector.connect("www.arloor.com", 80);
+        final SocketChannel socketChannel = connector.connect("sg.gcall.me", 80);
         while (true) {
             try {
                 if (socketChannel.isOpen()) {
-                    writeAll(socketChannel, "GET / HTTP/1.1\r\nHost: www.arloor.com\r\n\r\n");
-                    Thread.sleep(100);
+                    writeAll(socketChannel, "GET / HTTP/1.1\r\nHost: sg.gcall.me\r\n\r\n");
                 } else {
                     System.out.println("closed");
                     break;
