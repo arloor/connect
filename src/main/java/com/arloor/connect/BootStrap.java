@@ -14,7 +14,6 @@ import io.netty.channel.*;
 import io.netty.channel.socket.ServerSocketChannel;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.*;
-import io.netty.handler.codec.socksx.v5.Socks5AddressType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,28 +22,24 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.file.Files;
-import java.util.LinkedHashSet;
 import java.util.Objects;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 
-public final class ClientBootStrap {
+public final class BootStrap {
 
-    private static String[] args;
-    private static Logger logger = LoggerFactory.getLogger(ClientBootStrap.class.getSimpleName());
-
+    private static String[] cmdArgs;
+    private static Logger logger = LoggerFactory.getLogger(BootStrap.class.getSimpleName());
     public static final Class<? extends ServerSocketChannel> clazzServerSocketChannel = OsHelper.serverSocketChannelClazz();
     public static final Class<? extends SocketChannel> clazzSocketChannel = OsHelper.socketChannelClazz();
-
     public static Config config;
-
-    public static LinkedHashSet<Socks5AddressType> blockedAddressType = new LinkedHashSet<>();
 
 
     public static String initConfig() throws IOException {
-        if (args.length == 2 && args[0].equals("-c")) {
-            File file = new File(args[1]);
+        String content;
+        if (cmdArgs.length == 2 && cmdArgs[0].equals("-c")) {
+            File file = new File(cmdArgs[1]);
             logger.info("config @" + file.getAbsolutePath());
             if (!file.exists()) {
                 logger.error("Error: the config file not exists");
@@ -53,42 +48,37 @@ public final class ClientBootStrap {
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             Files.copy(file.toPath(), outputStream);
-            config = JsonUtil.fromJson(outputStream.toString(), new TypeReference<Config>() {
-            });
-            outputStream.close();
+            content=outputStream.toString();
+
         } else {
-            //        读取jar中resources下的sogo.json
             logger.info("config @classpath:client.json");
-            BufferedReader in = new BufferedReader(new InputStreamReader(Objects.requireNonNull(ClientBootStrap.class.getClassLoader().getResourceAsStream("client.json"))));
+            BufferedReader in = new BufferedReader(new InputStreamReader(Objects.requireNonNull(BootStrap.class.getClassLoader().getResourceAsStream("client.json"))));
             StringBuffer buffer = new StringBuffer();
             String line = "";
             while ((line = in.readLine()) != null) {
                 buffer.append(line);
             }
-            String input = buffer.toString();
-            config = JsonUtil.fromJson(input, new TypeReference<Config>() {
-            });
+            content= buffer.toString();
         }
-        return JsonUtil.toJson(config);
+        BootStrap.config = JsonUtil.fromJson(content, new TypeReference<Config>() {
+        });
+        return JsonUtil.toJson(BootStrap.config);
     }
 
     public static void main(String[] args) throws Exception {
-        ClientBootStrap.args = args;
-        initConfig();
+        BootStrap.cmdArgs = args;
+        logger.info(initConfig());
         EventLoopGroup bossGroup = OsHelper.buildEventLoopGroup(1);
         EventLoopGroup workerGroup = OsHelper.buildEventLoopGroup(0);
-        InetSocketAddress socks5Addr;
-        InetSocketAddress httpAddr;
-        InetSocketAddress configAddr;
-        if (config.isLocalhost()) {
-            socks5Addr=new InetSocketAddress(InetAddress.getLoopbackAddress(),config.getSocks5Port());
-            httpAddr=new InetSocketAddress(InetAddress.getLoopbackAddress(),config.getHttpPort());
-            configAddr=new InetSocketAddress(InetAddress.getLoopbackAddress(),config.getConfigPort());
-        }else {
-            socks5Addr=new InetSocketAddress(config.getSocks5Port());
-            httpAddr=new InetSocketAddress(config.getHttpPort());
-            configAddr=new InetSocketAddress(config.getConfigPort());
-        }
+        InetSocketAddress socks5Addr= config.getSocks5Proxy().isOnlyLocalhost()
+                ?new InetSocketAddress(InetAddress.getLoopbackAddress(), config.getSocks5Proxy().getPort())
+                :new InetSocketAddress(config.getSocks5Proxy().getPort());
+        InetSocketAddress httpAddr= config.getHttpProxy().isOnlyLocalhost()
+                ?new InetSocketAddress(InetAddress.getLoopbackAddress(), config.getHttpProxy().getPort())
+                :new InetSocketAddress(config.getHttpProxy().getPort());
+        InetSocketAddress configAddr= config.getControlServer().isOnlyLocalhost()
+                ?new InetSocketAddress(InetAddress.getLoopbackAddress(), config.getControlServer().getPort())
+                :new InetSocketAddress(config.getControlServer().getPort());
         try {
 
             // http proxy bootstrap
@@ -129,7 +119,7 @@ public final class ClientBootStrap {
                                     if (fromLocalhost && "/reload".equals(request.uri())) {
                                         logger.info("reload");
                                         try {
-                                            String config = ClientBootStrap.initConfig();
+                                            String config = BootStrap.initConfig();
                                             FullHttpResponse response = new DefaultFullHttpResponse(request.protocolVersion(), HttpResponseStatus.OK,
                                                     Unpooled.wrappedBuffer(config.getBytes()));
                                             response.headers()

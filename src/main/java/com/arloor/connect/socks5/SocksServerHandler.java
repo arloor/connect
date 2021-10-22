@@ -1,7 +1,7 @@
 
 package com.arloor.connect.socks5;
 
-import com.arloor.connect.ClientBootStrap;
+import com.arloor.connect.BootStrap;
 import com.arloor.connect.common.ExceptionUtil;
 import com.arloor.connect.common.SocketChannelUtils;
 import io.netty.channel.ChannelHandler;
@@ -39,7 +39,7 @@ public final class SocksServerHandler extends SimpleChannelInboundHandler<SocksM
                 }
 
                 if (socksRequest instanceof Socks5InitialRequest) {
-                    if(ClientBootStrap.config.isAuth()&&!fromLocalhost){//需要密码认证
+                    if(BootStrap.config.getSocks5Proxy().isCheckAuth()&&!fromLocalhost){//需要密码认证
                         ctx.pipeline().addFirst(new Socks5PasswordAuthRequestDecoder());
                         ctx.write(new DefaultSocks5InitialResponse(Socks5AuthMethod.PASSWORD));
                     }else{//不需要密码认证
@@ -49,7 +49,7 @@ public final class SocksServerHandler extends SimpleChannelInboundHandler<SocksM
                 } else if (socksRequest instanceof Socks5PasswordAuthRequest) {
 
                     Socks5PasswordAuthRequest authRequest=(Socks5PasswordAuthRequest) socksRequest;
-                    if(authRequest.username().equals(ClientBootStrap.config.getUser())&&authRequest.password().equals(ClientBootStrap.config.getPass())){
+                    if(authRequest.username().equals(BootStrap.config.getSocks5Proxy().getUser())&&authRequest.password().equals(BootStrap.config.getSocks5Proxy().getUser())){
                         ctx.pipeline().addFirst(new Socks5CommandRequestDecoder());
                         ctx.write(new DefaultSocks5PasswordAuthResponse(Socks5PasswordAuthStatus.SUCCESS));
                     }else{

@@ -1,7 +1,7 @@
 
 package com.arloor.connect.socks5;
 
-import com.arloor.connect.ClientBootStrap;
+import com.arloor.connect.BootStrap;
 import com.arloor.connect.common.BlindRelayHandler;
 import com.arloor.connect.common.Config;
 import com.arloor.connect.common.ExceptionUtil;
@@ -19,14 +19,14 @@ import io.netty.util.concurrent.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.arloor.connect.ClientBootStrap.clazzSocketChannel;
+import static com.arloor.connect.BootStrap.clazzSocketChannel;
+import static com.arloor.connect.BootStrap.config;
 
 //不可共享
 //@ChannelHandler.Sharable
 public final class SocksServerConnectHandler extends SimpleChannelInboundHandler<SocksMessage> {
 
     private static Logger logger = LoggerFactory.getLogger(SocksServerConnectHandler.class.getSimpleName());
-    private static String[] netflixSuffix = new String[]{"nflxso.net", "nflxvideo.net", "netflix.com", "nflxext.com", "nflximg.net"};
 
     public SocksServerConnectHandler() {
         super();
@@ -44,12 +44,7 @@ public final class SocksServerConnectHandler extends SimpleChannelInboundHandler
             final Socks5CommandRequest request = (Socks5CommandRequest) message;
             //禁止CONNECT域名和ipv6
             final String dstAddr = request.dstAddr();
-            Config.Server server=router(dstAddr);
-            if (ClientBootStrap.blockedAddressType.contains(request.dstAddrType())) {
-                logger.warn("NOT support: " + dstAddr + ":" + request.dstPort() + "  <<<<<  " + ctx.channel().remoteAddress());
-                ctx.close();
-                return;
-            }
+            Config.Server server= config.getSocks5Proxy().route(dstAddr);
 
             Promise<Channel> promise = ctx.executor().newPromise();
             promise.addListener(
@@ -111,15 +106,6 @@ public final class SocksServerConnectHandler extends SimpleChannelInboundHandler
         } else {
             ctx.close();
         }
-    }
-
-    private Config.Server router(String dstAddr) {
-        for (String suffix : netflixSuffix) {
-            if (dstAddr.endsWith(suffix)){
-                return ClientBootStrap.config.getSocks5NetflixServer();
-            }
-        }
-        return ClientBootStrap.config.getServer();
     }
 
     @Override

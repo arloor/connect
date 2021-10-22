@@ -1,22 +1,41 @@
 {
-  "socks5Port": 1080,
-  "httpPort": 3128,
-  "configPort": 1234,
-  "speedLimitKB": 0,
-  "use": 0,
-  "servers": [
-    {
-      "host": "localhost",
+  "socks5Proxy": {
+    "port": 1080,
+    "user": "user",
+    "passwd": "passwd",
+    "checkAuth": false,
+    "onlyLocalhost": false,
+    "finalServer": {
+      "host": "xxxxx",
       "port": 443,
-      "userName": "aaaa",
-      "password": "aaaaa"
+      "userName": "xxx",
+      "password": "xxx"
+    },
+    "routers": [{
+      "addrSuffixes": ["nflxso.net", "nflxvideo.net", "netflix.com", "nflxext.com"],
+      "server": {
+        "host": "xxx",
+        "port": 443,
+        "userName": "xxx",
+        "password": "xxx"
+      }
+    }]
+  },
+  "httpProxy": {
+    "port": 3128,
+    "user": "xx",
+    "passwd": "xx",
+    "checkAuth": false,
+    "onlyLocalhost": false,
+    "server": {
+      "host": "xx",
+      "port": 443,
+      "userName": "xx",
+      "password": "xx"
     }
-  ],
-  "user": "aaaa",
-  "pass": "aaaa",
-  "auth": true,
-  "supportDomain": true,
-  "supportIPv4": true,
-  "supportIPv6": false,
-  "localhost": true
+  },
+  "controlServer": {
+    "port": 7229,
+    "onlyLocalhost": true
+  }
 }

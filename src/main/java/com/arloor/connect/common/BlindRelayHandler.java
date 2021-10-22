@@ -1,7 +1,7 @@
 
 package com.arloor.connect.common;
 
-import com.arloor.connect.ClientBootStrap;
+import com.arloor.connect.BootStrap;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -21,7 +21,7 @@ import java.util.Objects;
 
 public final class BlindRelayHandler extends ChannelInboundHandlerAdapter {
 
-    private static final String clientAuth = "Basic " + ClientBootStrap.config.getClientBasicAuth();
+    private static final String clientAuth = "Basic " + BootStrap.config.getHttpProxy().base64Auth();
 
     private static Logger logger = LoggerFactory.getLogger(BlindRelayHandler.class.getSimpleName());
 
@@ -30,7 +30,7 @@ public final class BlindRelayHandler extends ChannelInboundHandlerAdapter {
 
     public BlindRelayHandler(Channel relayChannel) {
         this.relayChannel = relayChannel;
-        this.basicAuth = ClientBootStrap.config.getServer().base64Auth();
+        this.basicAuth = BootStrap.config.getHttpProxy().getServer().base64Auth();
     }
 
     @Override
@@ -58,7 +58,7 @@ public final class BlindRelayHandler extends ChannelInboundHandlerAdapter {
                     fromLocalhost = ((InetSocketAddress) clientAddr).getAddress().isLoopbackAddress();
                 }
                 request = (HttpRequest) msg;
-                if (ClientBootStrap.config.isAuth() && !fromLocalhost) {
+                if (BootStrap.config.getHttpProxy().isCheckAuth() && !fromLocalhost) {
                     String authorization = request.headers().get("Proxy-Authorization", "Basic " + basicAuth);
                     if (!Objects.equals(authorization, clientAuth)) {
                         logger.warn(String.format("%s %s %s !wrong_auth{%s}", clientAddr.toString(), request.method(), request.uri(), authorization));

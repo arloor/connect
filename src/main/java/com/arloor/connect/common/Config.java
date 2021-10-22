@@ -1,171 +1,266 @@
 package com.arloor.connect.common;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 
 public class Config {
+    @JsonIgnore
     private static final String POUND_SIGN = "\u00A3";
-
-    private int httpPort = 3128;
-    private int socks5Port = 1080;
-    private int configPort = 1234;
-    private int speedLimitKB = 0;
-    private int use = 0;
-    private int socks5netflixUse = 0;
-    private List<Server> servers;
-    private String user;
-    private String pass;
-    private boolean auth;
-    private boolean supportDomain = true;
-    private boolean supportIPv4 = true;
-    private boolean supportIPv6 = false;
-    private boolean localhost = true;
+    private Socks5Proxy socks5Proxy;
+    private HttpProxy httpProxy;
+    private ControlServer controlServer;
 
 
-    public Server getServer(){
-        return servers.get(use);
+    public HttpProxy getHttpProxy() {
+        return httpProxy;
     }
 
-    public Server getSocks5NetflixServer(){
-        return servers.get(socks5netflixUse);
+    public void setHttpProxy(HttpProxy httpProxy) {
+        this.httpProxy = httpProxy;
+    }
+
+    public Socks5Proxy getSocks5Proxy() {
+        return socks5Proxy;
+    }
+
+    public void setSocks5Proxy(Socks5Proxy socks5Proxy) {
+        this.socks5Proxy = socks5Proxy;
+    }
+
+    public ControlServer getControlServer() {
+        return controlServer;
+    }
+
+    public void setControlServer(ControlServer controlServer) {
+        this.controlServer = controlServer;
+    }
+
+    public static final class HttpProxy {
+        private int port = 3128;
+        private String user;
+        private String passwd;
+        private boolean checkAuth;
+        private boolean onlyLocalhost;
+        private Server server;
+
+        public String base64Auth() {
+            String userPasswd = user + ":" + passwd;
+            return Base64.getEncoder().encodeToString(userPasswd.getBytes(StandardCharsets.UTF_8));
+        }
+
+        public HttpProxy() {
+        }
+
+        public HttpProxy(int port, String user, String passwd, boolean checkAuth, boolean onlyLocalhost, Server server) {
+            this.port = port;
+            this.user = user;
+            this.passwd = passwd;
+            this.checkAuth = checkAuth;
+            this.onlyLocalhost = onlyLocalhost;
+            this.server = server;
+        }
+
+        public int getPort() {
+            return port;
+        }
+
+        public void setPort(int port) {
+            this.port = port;
+        }
+
+        public String getUser() {
+            return user;
+        }
+
+        public void setUser(String user) {
+            this.user = user;
+        }
+
+        public String getPasswd() {
+            return passwd;
+        }
+
+        public void setPasswd(String passwd) {
+            this.passwd = passwd;
+        }
+
+        public boolean isCheckAuth() {
+            return checkAuth;
+        }
+
+        public void setCheckAuth(boolean checkAuth) {
+            this.checkAuth = checkAuth;
+        }
+
+        public boolean isOnlyLocalhost() {
+            return onlyLocalhost;
+        }
+
+        public void setOnlyLocalhost(boolean onlyLocalhost) {
+            this.onlyLocalhost = onlyLocalhost;
+        }
+
+        public Server getServer() {
+            return server;
+        }
+
+        public void setServer(Server server) {
+            this.server = server;
+        }
+    }
+
+    public static final class Socks5Proxy {
+        private int port = 1080;
+        private String user;
+        private String passwd;
+        private boolean checkAuth;
+        private boolean onlyLocalhost;
+        private Server finalServer;
+        private List<Router> routers;
+
+        public Socks5Proxy() {
+        }
+
+        public Server route(String targetAddr){
+            for (Router router : routers) {
+                for (String addrSuffix : router.addrSuffixes) {
+                    if (targetAddr.endsWith(addrSuffix)){
+                        return router.getServer();
+                    }
+                }
+            }
+            return finalServer;
+        }
+
+        public Socks5Proxy(int port, String user, String passwd, boolean checkAuth, boolean onlyLocalhost, Server finalServer, List<Router> routers) {
+            this.port = port;
+            this.user = user;
+            this.passwd = passwd;
+            this.checkAuth = checkAuth;
+            this.onlyLocalhost = onlyLocalhost;
+            this.finalServer = finalServer;
+            this.routers = routers;
+        }
+
+        public int getPort() {
+            return port;
+        }
+
+        public void setPort(int port) {
+            this.port = port;
+        }
+
+        public String getUser() {
+            return user;
+        }
+
+        public void setUser(String user) {
+            this.user = user;
+        }
+
+        public String getPasswd() {
+            return passwd;
+        }
+
+        public void setPasswd(String passwd) {
+            this.passwd = passwd;
+        }
+
+        public boolean isCheckAuth() {
+            return checkAuth;
+        }
+
+        public void setCheckAuth(boolean checkAuth) {
+            this.checkAuth = checkAuth;
+        }
+
+        public boolean isOnlyLocalhost() {
+            return onlyLocalhost;
+        }
+
+        public void setOnlyLocalhost(boolean onlyLocalhost) {
+            this.onlyLocalhost = onlyLocalhost;
+        }
+
+        public Server getFinalServer() {
+            return finalServer;
+        }
+
+        public void setFinalServer(Server finalServer) {
+            this.finalServer = finalServer;
+        }
+
+        public List<Router> getRouters() {
+            return routers;
+        }
+
+        public void setRouters(List<Router> routers) {
+            this.routers = routers;
+        }
+    }
+
+    public static final class ControlServer {
+        private int port = 7229;
+        private boolean onlyLocalhost;
+
+        public ControlServer() {
+        }
+
+        public ControlServer(int port, boolean onlyLocalhost) {
+            this.port = port;
+            this.onlyLocalhost = onlyLocalhost;
+        }
+
+        public int getPort() {
+            return port;
+        }
+
+        public void setPort(int port) {
+            this.port = port;
+        }
+
+        public boolean isOnlyLocalhost() {
+            return onlyLocalhost;
+        }
+
+        public void setOnlyLocalhost(boolean onlyLocalhost) {
+            this.onlyLocalhost = onlyLocalhost;
+        }
     }
 
 
+    public static final class Router {
+        private List<String> addrSuffixes = new ArrayList<>();
+        private Server server;
 
-    /**
-     * https://datatracker.ietf.org/doc/html/rfc7617
-     * The user's name is "test", and the password is the string "123"
-     * followed by the Unicode character U+00A3 (POUND SIGN).  Using the
-     * character encoding scheme UTF-8, the user-pass becomes:
-     * <p>
-     * 't' 'e' 's' 't' ':' '1' '2' '3' pound
-     * 74  65  73  74  3A  31  32  33  C2  A3
-     * <p>
-     * Encoding this octet sequence in Base64 ([RFC4648], Section 4) yields:
-     * <p>
-     * dGVzdDoxMjPCow==
-     *
-     * @return
-     */
-    public String getClientBasicAuth() {
-        String userPasswd = user + ":" + pass;
-        userPasswd += POUND_SIGN;
-        return Base64.getEncoder().encodeToString(userPasswd.getBytes(StandardCharsets.UTF_8));
+        public List<String> getAddrSuffixes() {
+            return addrSuffixes;
+        }
+
+        public void setAddrSuffixes(List<String> addrSuffixes) {
+            this.addrSuffixes = addrSuffixes;
+        }
+
+        public Server getServer() {
+            return server;
+        }
+
+        public void setServer(Server server) {
+            this.server = server;
+        }
+
+        public Router(List<String> addrSuffixes, Server server) {
+            this.addrSuffixes = addrSuffixes;
+            this.server = server;
+        }
+
+        public Router() {
+        }
     }
-
-    public int getConfigPort() {
-        return configPort;
-    }
-
-    public void setConfigPort(int configPort) {
-        this.configPort = configPort;
-    }
-
-    public int getHttpPort() {
-        return httpPort;
-    }
-
-    public void setHttpPort(int httpPort) {
-        this.httpPort = httpPort;
-    }
-
-    public int getSocks5Port() {
-        return socks5Port;
-    }
-
-    public void setSocks5Port(int socks5Port) {
-        this.socks5Port = socks5Port;
-    }
-
-    public int getSpeedLimitKB() {
-        return speedLimitKB;
-    }
-
-    public void setSpeedLimitKB(int speedLimitKB) {
-        this.speedLimitKB = speedLimitKB;
-    }
-
-    public int getUse() {
-        return use;
-    }
-
-    public void setUse(int use) {
-        this.use = use;
-    }
-
-    public int getSocks5netflixUse() {
-        return socks5netflixUse;
-    }
-
-    public void setSocks5netflixUse(int socks5netflixUse) {
-        this.socks5netflixUse = socks5netflixUse;
-    }
-
-    public List<Server> getServers() {
-        return servers;
-    }
-
-    public void setServers(List<Server> servers) {
-        this.servers = servers;
-    }
-
-    public String getUser() {
-        return user;
-    }
-
-    public void setUser(String user) {
-        this.user = user;
-    }
-
-    public String getPass() {
-        return pass;
-    }
-
-    public void setPass(String pass) {
-        this.pass = pass;
-    }
-
-    public boolean isAuth() {
-        return auth;
-    }
-
-    public void setAuth(boolean auth) {
-        this.auth = auth;
-    }
-
-    public boolean isSupportDomain() {
-        return supportDomain;
-    }
-
-    public void setSupportDomain(boolean supportDomain) {
-        this.supportDomain = supportDomain;
-    }
-
-    public boolean isSupportIPv4() {
-        return supportIPv4;
-    }
-
-    public void setSupportIPv4(boolean supportIPv4) {
-        this.supportIPv4 = supportIPv4;
-    }
-
-    public boolean isSupportIPv6() {
-        return supportIPv6;
-    }
-
-    public void setSupportIPv6(boolean supportIPv6) {
-        this.supportIPv6 = supportIPv6;
-    }
-
-    public boolean isLocalhost() {
-        return localhost;
-    }
-
-    public void setLocalhost(boolean localhost) {
-        this.localhost = localhost;
-    }
-
 
     public static final class Server {
         private String host;
@@ -173,9 +268,20 @@ public class Config {
         private String userName;
         private String password;
 
-        public String base64Auth(){
-            String userPasswd = getUserName() + ":" + getPassword();
+        public Server() {
+        }
+
+        public String base64Auth() {
+            String userPasswd = userName + ":" + password;
             return Base64.getEncoder().encodeToString(userPasswd.getBytes(StandardCharsets.UTF_8));
+        }
+
+
+        public Server(String host, int port, String userName, String password) {
+            this.host = host;
+            this.port = port;
+            this.userName = userName;
+            this.password = password;
         }
 
         public String getHost() {

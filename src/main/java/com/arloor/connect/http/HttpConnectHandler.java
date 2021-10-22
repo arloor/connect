@@ -1,7 +1,6 @@
 package com.arloor.connect.http;
 
-import com.arloor.connect.ClientBootStrap;
-import com.arloor.connect.common.Config;
+import com.arloor.connect.BootStrap;
 import com.arloor.connect.common.ExceptionUtil;
 import com.arloor.connect.common.SocketChannelUtils;
 import io.netty.bootstrap.Bootstrap;
@@ -19,7 +18,7 @@ import javax.net.ssl.SSLException;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.arloor.connect.ClientBootStrap.clazzSocketChannel;
+import static com.arloor.connect.BootStrap.clazzSocketChannel;
 
 public class HttpConnectHandler extends ChannelInboundHandlerAdapter {
 
@@ -95,7 +94,7 @@ public class HttpConnectHandler extends ChannelInboundHandlerAdapter {
 
     public HttpConnectHandler() {
         super();
-        this.remotePort = ClientBootStrap.config.getServer().getPort();
-        this.remoteHost = ClientBootStrap.config.getServer().getHost();
+        this.remotePort = BootStrap.config.getHttpProxy().getServer().getPort();
+        this.remoteHost = BootStrap.config.getHttpProxy().getServer().getHost();
     }
 }
