@@ -36,75 +36,70 @@ public final class SocksServerConnectHandler extends SimpleChannelInboundHandler
 
     @Override
     public void channelRead0(final ChannelHandlerContext ctx, final SocksMessage message) throws Exception {
-        if (message instanceof Socks4CommandRequest) {
-            //不处理sock4,直接关闭channel
-            logger.warn("socks4 request from" + ctx.channel().remoteAddress());
-            ctx.close();
-        } else if (message instanceof Socks5CommandRequest) {
-            final Socks5CommandRequest request = (Socks5CommandRequest) message;
-            //禁止CONNECT域名和ipv6
-            final String dstAddr = request.dstAddr();
-            Config.Server server= config.getSocks5Proxy().route(dstAddr);
 
-            Promise<Channel> promise = ctx.executor().newPromise();
-            promise.addListener(
-                    new FutureListener<Channel>() {
-                        @Override
-                        public void operationComplete(final Future<Channel> future) throws Exception {
-                            final Channel outboundChannel = future.getNow();
-                            if (future.isSuccess()) {
-                                ChannelFuture responseFuture =
-                                        ctx.channel().writeAndFlush(new DefaultSocks5CommandResponse(
-                                                Socks5CommandStatus.SUCCESS,
-                                                request.dstAddrType(),
-                                                dstAddr,
-                                                request.dstPort()));
+        switch (message) {
+            case Socks4CommandRequest cmd -> {
+                logger.warn("socks4 request from" + ctx.channel().remoteAddress());
+                ctx.close();
+            }
+            case Socks5CommandRequest cmd -> {
+                final String dstAddr = cmd.dstAddr();
+                Config.Server server = config.getSocks5Proxy().route(dstAddr);
 
-                                responseFuture.addListener(new ChannelFutureListener() {
-                                    @Override
-                                    public void operationComplete(ChannelFuture channelFuture) {
-                                        if (channelFuture.isSuccess()) {
-                                            ctx.pipeline().remove(SocksServerConnectHandler.this);
-                                            // outboundChannel先增加handler，再删除Check的Hanlder，以防有Exception没有catch
-                                            outboundChannel.pipeline().addLast(new BlindRelayHandler(ctx.channel()));
-                                            outboundChannel.pipeline().remove("check");
-//                                            logger.info(request.dstAddr()+":"+request.dstPort()+"  <<<<<<<  "+ctx.channel().remoteAddress());
-                                            logger.info(ctx.channel().remoteAddress().toString() + " " + request.type() + " " + dstAddr + ":" + request.dstPort());
-                                            ctx.pipeline().addLast(new BlindRelayHandler(outboundChannel));
+                Promise<Channel> promise = ctx.executor().newPromise();
+                promise.addListener(
+                        new FutureListener<Channel>() {
+                            @Override
+                            public void operationComplete(final Future<Channel> future) throws Exception {
+                                final Channel outboundChannel = future.getNow();
+                                if (future.isSuccess()) {
+                                    ChannelFuture responseFuture =
+                                            ctx.channel().writeAndFlush(new DefaultSocks5CommandResponse(
+                                                    Socks5CommandStatus.SUCCESS,
+                                                    cmd.dstAddrType(),
+                                                    dstAddr,
+                                                    cmd.dstPort()));
+
+                                    responseFuture.addListener(new ChannelFutureListener() {
+                                        @Override
+                                        public void operationComplete(ChannelFuture channelFuture) {
+                                            if (channelFuture.isSuccess()) {
+                                                ctx.pipeline().remove(SocksServerConnectHandler.this);
+                                                // outboundChannel先增加handler，再删除Check的Hanlder，以防有Exception没有catch
+                                                outboundChannel.pipeline().addLast(new BlindRelayHandler(ctx.channel()));
+                                                outboundChannel.pipeline().remove("check");
+                                                logger.info(ctx.channel().remoteAddress().toString() + " " + cmd.type() + " " + dstAddr + ":" + cmd.dstPort());
+                                                ctx.pipeline().addLast(new BlindRelayHandler(outboundChannel));
+                                            }
                                         }
-                                    }
-                                });
-                            } else {
-                                ctx.channel().writeAndFlush(new DefaultSocks5CommandResponse(
-                                        Socks5CommandStatus.FAILURE, request.dstAddrType()));
-                                SocketChannelUtils.closeOnFlush(ctx.channel());
+                                    });
+                                } else {
+                                    ctx.channel().writeAndFlush(new DefaultSocks5CommandResponse(
+                                            Socks5CommandStatus.FAILURE, cmd.dstAddrType()));
+                                    SocketChannelUtils.closeOnFlush(ctx.channel());
+                                }
                             }
-                        }
-                    });
+                        });
 
-            final Channel inboundChannel = ctx.channel();
-            b.group(inboundChannel.eventLoop())
-                    .channel(clazzSocketChannel)
-                    .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
-                    .option(ChannelOption.SO_KEEPALIVE, true)
-                    .handler(new DirectClientHandler(promise, dstAddr, request.dstPort(), server.base64Auth()));
-            b.connect(server.getHost(), server.getPort()).addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                    if (future.isSuccess()) {
-                        // Connection established use handler provided results
-//                        System.out.println("连接成功");
-                    } else {
-                        // Close the connection if the connection attempt has failed.
-                        logger.error("connect to: " + server.getHost() + ":" + server.getPort() + " failed! == " + ExceptionUtil.getMessage(future.cause()));
-                        ctx.channel().writeAndFlush(
-                                new DefaultSocks5CommandResponse(Socks5CommandStatus.FAILURE, request.dstAddrType()));
-                        SocketChannelUtils.closeOnFlush(ctx.channel());
+                final Channel inboundChannel = ctx.channel();
+                b.group(inboundChannel.eventLoop())
+                        .channel(clazzSocketChannel)
+                        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
+                        .option(ChannelOption.SO_KEEPALIVE, true)
+                        .handler(new DirectClientHandler(promise, dstAddr, cmd.dstPort(), server.base64Auth()));
+                b.connect(server.getHost(), server.getPort()).addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture future) throws Exception {
+                        if (!future.isSuccess()) {
+                            logger.error("connect to: " + server.getHost() + ":" + server.getPort() + " failed! == " + ExceptionUtil.getMessage(future.cause()));
+                            ctx.channel().writeAndFlush(
+                                    new DefaultSocks5CommandResponse(Socks5CommandStatus.FAILURE, cmd.dstAddrType()));
+                            SocketChannelUtils.closeOnFlush(ctx.channel());
+                        }
                     }
-                }
-            });
-        } else {
-            ctx.close();
+                });
+            }
+            default -> ctx.close();
         }
     }
 
