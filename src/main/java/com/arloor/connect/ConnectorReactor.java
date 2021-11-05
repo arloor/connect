@@ -75,13 +75,11 @@ public class ConnectorReactor implements Runnable {
         thread.setDaemon(true);
         thread.start();
         final SocketWrapper socketWrapper = connector.connect("sg.gcall.me", 80);
-        socketWrapper.writeAll("GET / HTTP/1.1\r\nHost: sg.gcall.me\r\n\r\n");
-        Thread.sleep(10);
         while (true) {
             try {
                 if (socketWrapper.socketChannel.isOpen()) {
                     socketWrapper.writeAll("GET / HTTP/1.1\r\nHost: sg.gcall.me\r\n\r\n");
-                    Thread.sleep(10);
+                    Thread.sleep(100);
                 } else {
                     System.out.println("closed");
                     break;
