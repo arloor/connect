@@ -16,12 +16,12 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-public class Connector implements Runnable {
+public class ConnectorReactor implements Runnable {
     private Selector selector;
     private ConcurrentLinkedQueue<SocketWrapper> waitQueue = new ConcurrentLinkedQueue<>();
     private ThreadPoolExecutor pool = new ThreadPoolExecutor(4, 4, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<>(10000));
 
-    public Connector() throws IOException {
+    public ConnectorReactor() throws IOException {
         selector = Selector.open();
     }
 
@@ -70,7 +70,7 @@ public class Connector implements Runnable {
     }
 
     public static void main(String[] args) throws Exception {
-        Connector connector = new Connector();
+        ConnectorReactor connector = new ConnectorReactor();
         Thread thread = new Thread(connector, "connector");
         thread.setDaemon(true);
         thread.start();
