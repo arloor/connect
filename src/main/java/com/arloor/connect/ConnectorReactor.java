@@ -25,6 +25,22 @@ public class ConnectorReactor implements Runnable {
         selector = Selector.open();
     }
 
+    public void shutdown() {
+        pool.shutdown();
+        try {
+            if (!pool.awaitTermination(100, TimeUnit.SECONDS)) {
+                pool.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        try {
+            selector.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public SocketWrapper connect(String host, int port) {
         try {
             final SocketChannel socketChannel = SocketChannel.open();
@@ -50,7 +66,7 @@ public class ConnectorReactor implements Runnable {
                 while ((socketWrapper = waitQueue.poll()) != null) {
                     socketWrapper.socketChannel.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE, socketWrapper);
                 }
-                final int numKey = selector.select(1);
+                final int numKey = selector.select(10);
                 if (numKey > 0) {
                     Set<SelectionKey> keys = selector.selectedKeys();
                     Iterator<SelectionKey> keyIterator = keys.iterator();
@@ -88,7 +104,8 @@ public class ConnectorReactor implements Runnable {
                 e.printStackTrace();
             }
         }
-        Thread.sleep(10000);
+        Thread.sleep(1000);
+        connector.shutdown();
     }
 
 
@@ -167,6 +184,7 @@ public class ConnectorReactor implements Runnable {
                             socketWrapper.flush();
                         }
                     } catch (NetException e) {
+                        e.printStackTrace();
                         key.cancel();
                         try {
                             socketWrapper.socketChannel.close();
