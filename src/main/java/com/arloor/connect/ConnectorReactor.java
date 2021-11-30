@@ -1,43 +1,36 @@
 package com.arloor.connect;
 
-import java.io.ByteArrayOutputStream;
+import com.arloor.connect.reactor.Event;
+import com.arloor.connect.reactor.EventLoop;
+import com.arloor.connect.reactor.EventWrapper;
+import com.arloor.connect.reactor.SocketWrapper;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
-import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ConnectorReactor implements Runnable {
     private Selector selector;
     private ConcurrentLinkedQueue<SocketWrapper> waitQueue = new ConcurrentLinkedQueue<>();
-    private ThreadPoolExecutor pool = new ThreadPoolExecutor(4, 4, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<>(10000));
+    private EventLoop[] workers = new EventLoop[8];
+    private AtomicInteger index = new AtomicInteger(0);
+
+    public EventLoop getWorker() {
+        return workers[index.getAndIncrement() % workers.length];
+    }
+
 
     public ConnectorReactor() throws IOException {
         selector = Selector.open();
-    }
-
-    public void shutdown() {
-        pool.shutdown();
-        try {
-            if (!pool.awaitTermination(100, TimeUnit.SECONDS)) {
-                pool.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        try {
-            selector.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+        for (int i = 0; i < workers.length; i++) {
+            workers[i] = new EventLoop(selector);
+            workers[i].start();
         }
     }
 
@@ -48,7 +41,7 @@ public class ConnectorReactor implements Runnable {
             socketChannel.socket().connect(new InetSocketAddress(host, port), 5000);
             // 设置为非阻塞
             socketChannel.configureBlocking(false);
-            final SocketWrapper socketWrapper = new SocketWrapper(socketChannel);
+            final SocketWrapper socketWrapper = new SocketWrapper(this, socketChannel);
             waitQueue.add(socketWrapper);
             selector.wakeup();
             return socketWrapper;
@@ -64,7 +57,7 @@ public class ConnectorReactor implements Runnable {
             while (true) {
                 SocketWrapper socketWrapper;
                 while ((socketWrapper = waitQueue.poll()) != null) {
-                    socketWrapper.socketChannel.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE, socketWrapper);
+                    socketWrapper.getSocketChannel().register(selector, SelectionKey.OP_READ, socketWrapper);
                 }
                 final int numKey = selector.select(10);
                 if (numKey > 0) {
@@ -73,9 +66,10 @@ public class ConnectorReactor implements Runnable {
                     while (keyIterator.hasNext()) {
                         SelectionKey key = keyIterator.next();
                         keyIterator.remove();
-                        // 取消注册，防止其他线程处理该key
+                        final SocketWrapper wrapper = (SocketWrapper) key.attachment();
+                        // 取消注册，防止不断的可读事件
                         key.interestOps(key.interestOps() & (~key.readyOps()));
-                        pool.execute(new Processor(key));
+                        wrapper.getWorker().addEvent(new EventWrapper(Event.OP_READ, key, wrapper));
                     }
                 }
             }
@@ -93,7 +87,7 @@ public class ConnectorReactor implements Runnable {
         final SocketWrapper socketWrapper = connector.connect("sg.gcall.me", 80);
         while (true) {
             try {
-                if (socketWrapper.socketChannel.isOpen()) {
+                if (socketWrapper.getSocketChannel().isOpen()) {
                     socketWrapper.writeAll("GET / HTTP/1.1\r\nHost: sg.gcall.me\r\n\r\n");
                     Thread.sleep(100);
                 } else {
@@ -105,99 +99,6 @@ public class ConnectorReactor implements Runnable {
             }
         }
         Thread.sleep(1000);
-        connector.shutdown();
-    }
-
-
-    public static class SocketWrapper {
-        private Queue<ByteBuffer> writeBuffers = new ArrayBlockingQueue<>(100);
-        private ByteArrayOutputStream readBuffer = new ByteArrayOutputStream();
-        private SocketChannel socketChannel;
-
-        public SocketWrapper(SocketChannel socketChannel) {
-            this.socketChannel = socketChannel;
-        }
-
-        public void writeAll(String msg) {
-            ByteBuffer src = ByteBuffer.wrap(msg.getBytes(StandardCharsets.UTF_8));
-            this.writeBuffers.offer(src);
-        }
-
-        private void readAll() throws NetException {
-            final SocketChannel channel = this.socketChannel;
-            int cap = 1024;
-            ByteBuffer buffer = ByteBuffer.allocate(cap);
-            ByteArrayOutputStream out = this.readBuffer;
-            int read;
-            try {
-                while ((read = channel.read(buffer)) > 0) {
-                    buffer.flip();
-                    final byte[] dst = new byte[read];
-                    buffer.get(dst);
-                    out.write(dst);
-                    buffer.clear();
-                }
-            } catch (Throwable e) {
-                throw new NetException("Unknow", e);
-            }
-            if (read == -1) {
-                throw new NetException("EOF");
-            }
-        }
-
-        public void flush() {
-            ByteBuffer buffer;
-            while ((buffer = writeBuffers.peek()) != null) {
-                try {
-                    final int write = socketChannel.write(buffer);
-                    System.out.println(Thread.currentThread() + " write " + write);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                if (!buffer.hasRemaining()) {
-                    writeBuffers.poll();
-                } else {
-                    break;
-                }
-            }
-        }
-    }
-
-    public static final class Processor implements Runnable {
-        private SelectionKey key;
-
-        public Processor(SelectionKey key) {
-            this.key = key;
-        }
-
-        @Override
-        public void run() {
-            if (key.isValid()) {
-                final SocketWrapper socketWrapper = (SocketWrapper) key.attachment();
-                if (socketWrapper != null) {
-                    try {
-                        if (key.isReadable()) {
-                            socketWrapper.readAll();
-                            System.out.println(Thread.currentThread() + " read字节数 " + socketWrapper.readBuffer.size());
-                        }
-                        if (key.isWritable()) {
-                            socketWrapper.flush();
-                        }
-                    } catch (NetException e) {
-                        e.printStackTrace();
-                        key.cancel();
-                        try {
-                            socketWrapper.socketChannel.close();
-                        } catch (IOException ex) {
-                            System.err.println("close 失败");
-                        }
-                        return;
-                    }
-                }
-                // 处理完毕，再次注册事件
-                key.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
-            }
-        }
     }
 
     public static final class NetException extends Exception {
