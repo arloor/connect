@@ -44,7 +44,7 @@ public class Connector implements Runnable {
                 while ((socketChannel = waitQueue.poll()) != null) {
                     socketChannel.register(selector, SelectionKey.OP_READ, new Object());
                 }
-                final int numKey = selector.select(1);
+                final int numKey = selector.select(1000);
                 if (numKey > 0) {
                     Set<SelectionKey> keys = selector.selectedKeys();
                     Iterator<SelectionKey> keyIterator = keys.iterator();
