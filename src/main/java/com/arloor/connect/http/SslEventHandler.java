@@ -23,8 +23,7 @@ public class SslEventHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
 //        log.info(evt.toString());
-        if(evt instanceof SslHandshakeCompletionEvent){
-            SslHandshakeCompletionEvent sslComplete = (SslHandshakeCompletionEvent) evt;
+        if(evt instanceof SslHandshakeCompletionEvent sslComplete){
             if(sslComplete.isSuccess()){
                 if(ctx.channel().isActive()){
                     ctx.pipeline().remove(this);

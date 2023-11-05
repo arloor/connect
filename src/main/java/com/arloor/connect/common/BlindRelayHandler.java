@@ -51,7 +51,7 @@ public final class BlindRelayHandler extends ChannelInboundHandlerAdapter {
 
         if (relayChannel.isActive()) {
             HttpRequest request = null;
-            if (msg instanceof HttpRequest) {
+            if (msg instanceof HttpRequest ) {
                 boolean fromLocalhost = false;
                 SocketAddress clientAddr = ctx.channel().remoteAddress();
                 if (clientAddr instanceof InetSocketAddress) {
