@@ -10,7 +10,6 @@ import java.util.List;
 public class Config {
     @JsonIgnore
     private static final String POUND_SIGN = "\u00A3";
-    private Socks5Proxy socks5Proxy;
     private HttpProxy httpProxy;
     private ControlServer controlServer;
 
@@ -23,13 +22,6 @@ public class Config {
         this.httpProxy = httpProxy;
     }
 
-    public Socks5Proxy getSocks5Proxy() {
-        return socks5Proxy;
-    }
-
-    public void setSocks5Proxy(Socks5Proxy socks5Proxy) {
-        this.socks5Proxy = socks5Proxy;
-    }
 
     public ControlServer getControlServer() {
         return controlServer;
@@ -40,89 +32,12 @@ public class Config {
     }
 
     public static final class HttpProxy {
-        private int port = 3128;
-        private String user;
-        private String passwd;
-        private boolean checkAuth;
-        private boolean onlyLocalhost;
-        private Server server;
-
-        public String base64Auth() {
-            String userPasswd = user + ":" + passwd;
-            return Base64.getEncoder().encodeToString(userPasswd.getBytes(StandardCharsets.UTF_8));
-        }
-
-        public HttpProxy() {
-        }
-
-        public HttpProxy(int port, String user, String passwd, boolean checkAuth, boolean onlyLocalhost, Server server) {
-            this.port = port;
-            this.user = user;
-            this.passwd = passwd;
-            this.checkAuth = checkAuth;
-            this.onlyLocalhost = onlyLocalhost;
-            this.server = server;
-        }
-
-        public int getPort() {
-            return port;
-        }
-
-        public void setPort(int port) {
-            this.port = port;
-        }
-
-        public String getUser() {
-            return user;
-        }
-
-        public void setUser(String user) {
-            this.user = user;
-        }
-
-        public String getPasswd() {
-            return passwd;
-        }
-
-        public void setPasswd(String passwd) {
-            this.passwd = passwd;
-        }
-
-        public boolean isCheckAuth() {
-            return checkAuth;
-        }
-
-        public void setCheckAuth(boolean checkAuth) {
-            this.checkAuth = checkAuth;
-        }
-
-        public boolean isOnlyLocalhost() {
-            return onlyLocalhost;
-        }
-
-        public void setOnlyLocalhost(boolean onlyLocalhost) {
-            this.onlyLocalhost = onlyLocalhost;
-        }
-
-        public Server getServer() {
-            return server;
-        }
-
-        public void setServer(Server server) {
-            this.server = server;
-        }
-    }
-
-    public static final class Socks5Proxy {
         private int port = 1080;
-        private String user;
-        private String passwd;
-        private boolean checkAuth;
         private boolean onlyLocalhost;
         private Server finalServer;
         private List<Router> routers;
 
-        public Socks5Proxy() {
+        public HttpProxy() {
         }
 
         public Server route(String targetAddr){
@@ -136,11 +51,8 @@ public class Config {
             return finalServer;
         }
 
-        public Socks5Proxy(int port, String user, String passwd, boolean checkAuth, boolean onlyLocalhost, Server finalServer, List<Router> routers) {
+        public HttpProxy(int port,  boolean onlyLocalhost, Server finalServer, List<Router> routers) {
             this.port = port;
-            this.user = user;
-            this.passwd = passwd;
-            this.checkAuth = checkAuth;
             this.onlyLocalhost = onlyLocalhost;
             this.finalServer = finalServer;
             this.routers = routers;
@@ -152,30 +64,6 @@ public class Config {
 
         public void setPort(int port) {
             this.port = port;
-        }
-
-        public String getUser() {
-            return user;
-        }
-
-        public void setUser(String user) {
-            this.user = user;
-        }
-
-        public String getPasswd() {
-            return passwd;
-        }
-
-        public void setPasswd(String passwd) {
-            this.passwd = passwd;
-        }
-
-        public boolean isCheckAuth() {
-            return checkAuth;
-        }
-
-        public void setCheckAuth(boolean checkAuth) {
-            this.checkAuth = checkAuth;
         }
 
         public boolean isOnlyLocalhost() {

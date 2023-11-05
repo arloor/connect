@@ -2,13 +2,13 @@
 
 配合[HttpProxy](https://github.com/arloor/HttpProxy)使用
 
-在本机的1080启动socks5代理，本机3128启动http代理
+在本机3128启动http代理
 
 ## 配置文件
 
 ```json
 {
-  "socks5Proxy": {
+  "httpProxy": {
     "port": 1080,
     "user": "user",
     "passwd": "passwd",

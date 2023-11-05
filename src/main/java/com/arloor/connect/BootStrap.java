@@ -6,7 +6,6 @@ import com.arloor.connect.common.JsonUtil;
 import com.arloor.connect.common.OsHelper;
 import com.arloor.connect.common.SocketChannelUtils;
 import com.arloor.connect.http.HttpServerInitializer;
-import com.arloor.connect.socks5.SocksServerInitializer;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.Unpooled;
@@ -70,9 +69,6 @@ public final class BootStrap {
         logger.info(initConfig());
         EventLoopGroup bossGroup = OsHelper.buildEventLoopGroup(1);
         EventLoopGroup workerGroup = OsHelper.buildEventLoopGroup(0);
-        InetSocketAddress socks5Addr= config.getSocks5Proxy().isOnlyLocalhost()
-                ?new InetSocketAddress(InetAddress.getLoopbackAddress(), config.getSocks5Proxy().getPort())
-                :new InetSocketAddress(config.getSocks5Proxy().getPort());
         InetSocketAddress httpAddr= config.getHttpProxy().isOnlyLocalhost()
                 ?new InetSocketAddress(InetAddress.getLoopbackAddress(), config.getHttpProxy().getPort())
                 :new InetSocketAddress(config.getHttpProxy().getPort());
@@ -85,17 +81,11 @@ public final class BootStrap {
             ServerBootstrap httpBootStrap = new ServerBootstrap();
             httpBootStrap.group(bossGroup, workerGroup)
                     .channel(clazzServerSocketChannel)
-                    .childOption(ChannelOption.AUTO_READ, Boolean.FALSE)
+                    .childOption(ChannelOption.AUTO_READ, Boolean.TRUE)
                     .childHandler(new HttpServerInitializer());
 
             Channel httpServerChannel = httpBootStrap.bind(httpAddr).sync().channel();
 
-            // socks5 proxy bootstrap
-            ServerBootstrap socks5BootStrap = new ServerBootstrap();
-            socks5BootStrap.group(bossGroup, workerGroup)
-                    .channel(clazzServerSocketChannel)
-                    .childHandler(new SocksServerInitializer());
-            Channel socks5ServerChannel = socks5BootStrap.bind(socks5Addr).sync().channel();
 
             ServerBootstrap configBootstrap = new ServerBootstrap();
             configBootstrap.group(bossGroup, workerGroup)
@@ -139,7 +129,6 @@ public final class BootStrap {
             Channel configChannel = configBootstrap.bind(configAddr).sync().channel();
             logger.info("init completed!");
             httpServerChannel.closeFuture().sync();
-            socks5ServerChannel.closeFuture().sync();
             configChannel.closeFuture().sync();
         } finally {
             bossGroup.shutdownGracefully();
